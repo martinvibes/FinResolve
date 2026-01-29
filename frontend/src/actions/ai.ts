@@ -47,6 +47,7 @@ export async function generateAIResponse(
     // We might need to copy logic here or ensure aiLogic is isomorphic.
     // aiLogic.ts uses "export function" so it should be fine to import in server file if it doesn't use hooks.
     const response = generateRuleBasedResponse(query, profile);
+    console.log(response);
 
     // Identifies intent - just logging for context
     const tags =

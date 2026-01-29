@@ -44,8 +44,8 @@ export default function InsightsPage() {
           Hello, {profile.name || "friend"}! 👋
         </h2>
         <p className="text-slate-700 max-w-2xl">
-          I've analyzed your spending patterns for this week. Here's what I
-          found...
+          I&rsquo;ve analyzed your spending patterns for this week. Here&#39;s
+          what I found...
         </p>
       </div>
 
