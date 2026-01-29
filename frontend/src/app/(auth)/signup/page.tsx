@@ -61,7 +61,7 @@ export default function SignupPage() {
           </div>
 
           <Link
-            href="/dashboard"
+            href="/onboarding"
             className="w-full bg-primary text-white font-semibold py-4 rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 flex justify-center items-center"
           >
             Get Started

@@ -6,6 +6,7 @@ import { Home, PieChart, Target, Settings, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+// import finResolve from "/finResolve.webp"
 
 const navItems = [
   { name: "Home", href: "/dashboard", icon: Home },
@@ -51,14 +52,14 @@ export function Sidebar() {
       >
         <div className="flex flex-col h-full p-6">
           {/* Logo */}
-          <div className="mb-10 flex items-center gap-2 px-2">
+          <Link href="/" className="mb-10 flex items-center gap-2 px-2">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-              <span className="text-white font-bold text-lg">F</span>
+              <span className="text-white font-bold text-lg">Fin</span>
             </div>
             <span className="text-xl font-bold tracking-tight text-foreground">
               FinResolve
             </span>
-          </div>
+          </Link>
 
           {/* Navigation */}
           <nav className="flex-1 space-y-2">

@@ -7,7 +7,7 @@ interface GoalCardProps {
   title: string;
   target: number;
   current: number;
-  deadline: string;
+  deadline?: string;
   color?: string;
 }
 
@@ -25,7 +25,9 @@ export function GoalCard({
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="font-semibold text-lg text-slate-800">{title}</h3>
-          <p className="text-sm text-gray-400">By {deadline}</p>
+          <p className="text-sm text-gray-400">
+            {deadline ? `By ${deadline}` : "No deadline"}
+          </p>
         </div>
         <div className="bg-gray-50 p-2 rounded-full text-gray-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
           <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

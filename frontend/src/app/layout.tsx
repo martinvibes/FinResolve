@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { FinancialProvider } from "@/contexts/FinancialContext";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -27,7 +28,7 @@ export default function RootLayout({
           "antialiased min-h-screen font-sans bg-background text-foreground",
         )}
       >
-        {children}
+        <FinancialProvider>{children}</FinancialProvider>
       </body>
     </html>
   );

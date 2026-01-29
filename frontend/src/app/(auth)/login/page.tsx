@@ -75,7 +75,7 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-8 text-center text-sm text-slate-500">
-          Don't have an account?{" "}
+          Don&#39;t have an account?{" "}
           <Link
             href="/signup"
             className="font-semibold text-primary hover:underline"
@@ -93,7 +93,7 @@ export default function LoginPage() {
 
         <div className="relative z-20 h-full flex flex-col justify-end p-20 text-white">
           <h2 className="text-4xl font-bold mb-4 leading-tight">
-            "FinResolve changed how I view money forever."
+            &quot;FinResolve changed how I view money forever.&quot;
           </h2>
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-gray-300" />
