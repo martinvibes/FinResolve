@@ -113,6 +113,7 @@ function DashboardContent() {
     setTimeout(async () => {
       try {
         const response = await generateAIResponse(content, profile);
+        console.log("🤖 AI Response:", response);
         const newAiMsg: Message = {
           id: (Date.now() + 1).toString(),
           role: "assistant",

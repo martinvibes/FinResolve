@@ -65,12 +65,18 @@ export async function generateWeeklyInsight(
       };
     }
 
-    span.end({
-      output: insight,
-    } as any);
-    trace.end({
-      output: insight,
-    } as any);
+    // Update span with output, then end it
+    span.update({
+      output: { ...insight } as Record<string, unknown>,
+    });
+    span.end();
+
+    // Update trace with output, then end it
+    trace.update({
+      output: { ...insight } as Record<string, unknown>,
+    });
+    trace.end();
+
     await opikClient.flush();
 
     return insight;
