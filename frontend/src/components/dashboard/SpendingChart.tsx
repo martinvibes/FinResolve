@@ -17,6 +17,9 @@ const CATEGORY_COLORS: Record<SpendingCategory, string> = {
   education: "#f59e0b",
   savings: "#22c55e",
   other: "#6b7280",
+  data_airtime: "#0ea5e9", // Sky blue
+  family: "#f43f5e", // Rose
+  debt: "#b91c1c", // Dark red
 };
 
 function ChartSkeleton() {
@@ -102,6 +105,7 @@ export function SpendingChart() {
                 border: "none",
                 boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
               }}
+              position={{ y: 0 }}
             />
           </PieChart>
         </ResponsiveContainer>

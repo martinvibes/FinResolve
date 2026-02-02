@@ -23,7 +23,48 @@ function buildSystemPrompt(profile: UserFinancialProfile): string {
 
   // Calculate totals
   const totalSpending = spendingSummary.reduce((sum, s) => sum + s.total, 0);
-  const budgetRemaining = income?.amount ? income.amount - totalSpending : 0;
+  const monthlyIncome = income?.amount || 0;
+
+  // Calculate Account Assets
+  const accounts = profile.accounts || [];
+  const netWorth = accounts.reduce((sum, acc) => sum + acc.balance, 0);
+  const accountsList = accounts
+    .map((a) => `- ${a.name}: ${formatCurrency(a.balance)} (${a.type})`)
+    .join("\n");
+
+  // Calculate Recurring/Fixed Costs
+  const recurringItems = profile.recurringItems || [];
+  const committedSpend = recurringItems.reduce(
+    (sum, item) => sum + item.amount,
+    0,
+  );
+  const recurringList = recurringItems
+    .map((r) => `- ${r.name}: ${formatCurrency(r.amount)} (${r.frequency})`)
+    .join("\n");
+
+  // Calculate Safe to Spend (Logic aligned with FinancialPulseCards)
+  // Determine budget basis
+  const hasBudgets = (profile.budgets || []).length > 0;
+  let budgetLimit = monthlyIncome;
+  let budgetSpent = totalSpending;
+
+  if (hasBudgets) {
+    budgetLimit = profile.budgets.reduce((sum, b) => sum + b.limit, 0);
+    budgetSpent = profile.budgets.reduce((sum, b) => sum + b.spent, 0);
+  } else {
+    budgetLimit = monthlyIncome - committedSpend;
+  }
+
+  const budgetRemaining = Math.max(0, budgetLimit - budgetSpent);
+
+  // Get current date info
+  const now = new Date();
+  const daysLeftInMonth =
+    new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() -
+    now.getDate();
+
+  const safeDailySpend =
+    daysLeftInMonth > 0 ? budgetRemaining / daysLeftInMonth : 0;
 
   // Format top spending categories
   const topCategories = [...spendingSummary]
@@ -46,23 +87,25 @@ function buildSystemPrompt(profile: UserFinancialProfile): string {
           .join("\n  ")
       : "No savings goals set yet";
 
-  // Get current date info
-  const now = new Date();
-  const daysLeftInMonth =
-    new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() -
-    now.getDate();
-
   return `You are FinResolve AI, a friendly and supportive financial coach. You help users understand their money, budget better, and achieve their savings goals.
 
 User's Financial Context:
 - Name: ${name || "Friend"}
-- Monthly Income: ${income?.amount ? formatCurrency(income.amount) : "Not provided"}
-- Total Monthly Spending: ${totalSpending > 0 ? formatCurrency(totalSpending) : "Not tracked yet"}
-- Budget Remaining: ${budgetRemaining > 0 ? formatCurrency(budgetRemaining) : "N/A"}
-- Days Left in Month: ${daysLeftInMonth}
+- Net Worth (Total Cash): ${formatCurrency(netWorth)}
+- Monthly Income: ${monthlyIncome > 0 ? formatCurrency(monthlyIncome) : "Not set"}
+- Total Monthly Spending: ${formatCurrency(totalSpending)}
+- Committed Fixed Costs (Bills): ${formatCurrency(committedSpend)}
+- 'Safe to Spend' Remainder: ${formatCurrency(budgetRemaining)} (${formatCurrency(safeDailySpend)}/day for ${daysLeftInMonth} days)
+
+Accounts:
+${accountsList || "No accounts linked"}
+
+Recurring Bills:
+${recurringList || "No recurring bills"}
 
 Top Spending Categories:
   ${topCategories || "No spending data yet"}
+
 
 Savings Goals:
   ${goalsInfo}
@@ -77,7 +120,41 @@ Guidelines:
 - Always stay in character as their friendly financial coach
 - Keep responses concise but helpful (2-4 sentences for simple queries, more for detailed financial analysis)
 - Never give investment advice or legal advice - you're a budgeting coach
-- If they haven't shared financial data yet, gently encourage them to share their income/expenses so you can help better`;
+- If they haven't shared financial data yet, gently encourage them to share their income/expenses so you can help better
+- If the user clearly states they want to log an expense (e.g., "I spent 5k on food"):
+  1. FIRST, check if they specified which account they used (e.g. "from my generic bank", "cash", "credit card").
+  2. IF NOT, ask them: "Which account did you use? (e.g., [List user's account names])"
+  3. IF THEY HAVE specified the account (or if they only have one account), match it to one of the Account IDs below:
+     ${profile.accounts.map((a) => `${a.name} (ID: ${a.id})`).join(", ")}
+  4. THEN, output a JSON action block at the END of your response.
+  
+  Format:
+  [[ACTION]]
+  {
+    "type": "LOG_EXPENSE",
+    "payload": {
+      "amount": 5000,
+      "category": "food",
+      "description": "Food expense",
+      "accountId": "ACCOUNT_ID_HERE"
+    }
+  }
+  [[/ACTION]]
+  Categories: food, transport, utilities, data_airtime, housing, entertainment, shopping, health, education, savings, family, debt, other.
+  
+  Example Response:
+  "Got it! I've logged that from your ${profile.accounts[0]?.name || "account"}. 🍔"
+  [[ACTION]]
+  {
+    "type": "LOG_EXPENSE",
+    "payload": {
+      "amount": 5000,
+      "category": "food",
+      "description": "Food",
+      "accountId": "${profile.accounts[0]?.id || ""}"
+    }
+  }
+  [[/ACTION]]`;
 }
 
 /**
@@ -87,6 +164,7 @@ Guidelines:
 export async function generateAIResponse(
   query: string,
   profile: UserFinancialProfile,
+  history: { role: string; content: string }[] = [],
 ) {
   terminalLog(`Processing query: "${query}"`);
   const startTime = Date.now();
@@ -95,11 +173,33 @@ export async function generateAIResponse(
     // Build the system prompt with financial context
     const systemPrompt = buildSystemPrompt(profile);
 
-    // Call Gemini API first
-    const result = await geminiModel.generateContent([
-      { text: systemPrompt },
-      { text: `User: ${query}` },
-    ]);
+    // Limit history to last 10 messages to avoid token context limits
+    // and map to Gemini format
+    const recentHistory = history.slice(-10).map((msg) => ({
+      role: msg.role === "assistant" ? "model" : "user",
+      parts: [{ text: msg.content }],
+    }));
+
+    // Construct the full prompt structure
+    // Gemini expects: [System Prompt, ...History, Current Query]
+    // However, for generateContent with system instructions, we often put it in the config or as the first part.
+    // The previous implementation passed system prompt as text.
+    // Let's stick to the previous pattern but insert history in between.
+
+    const contents = [
+      { role: "user", parts: [{ text: systemPrompt }] }, // System prompt disguised as user message or just context
+      {
+        role: "model",
+        parts: [{ text: "Understood. I am ready to act as FinResolve AI." }],
+      }, // Ack to prime the model
+      ...recentHistory,
+      { role: "user", parts: [{ text: `User: ${query}` }] },
+    ];
+
+    // Call Gemini API
+    const result = await geminiModel.generateContent({
+      contents: contents,
+    });
 
     const response = result.response;
     const responseText = response.text();
@@ -172,10 +272,28 @@ export async function generateAIResponse(
       responseText,
     );
 
+    // Parse for actions
+    const actionMatch = responseText.match(
+      /\[\[ACTION\]\]([\s\S]*?)\[\[\/ACTION\]\]/,
+    );
+    let cleanContent = responseText;
+    let parsedAction: any = undefined;
+
+    if (actionMatch) {
+      try {
+        parsedAction = JSON.parse(actionMatch[1].trim());
+        // Remove the action block from the visible response
+        cleanContent = responseText.replace(actionMatch[0], "").trim();
+      } catch (e) {
+        console.error("Failed to parse AI action:", e);
+      }
+    }
+
     return {
-      content: responseText,
+      content: cleanContent,
       confidence: "high" as const,
       assumptions: undefined,
+      action: parsedAction,
     };
   } catch (error) {
     const latency = Date.now() - startTime;

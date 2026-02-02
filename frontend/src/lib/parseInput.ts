@@ -68,14 +68,23 @@ const CATEGORY_KEYWORDS: Record<SpendingCategory, string[]> = {
     "power",
     "nepa",
     "water",
-    "internet",
-    "data",
-    "airtime",
-    "phone",
     "cable",
     "tv",
     "dstv",
     "gotv",
+  ],
+  data_airtime: [
+    "data",
+    "airtime",
+    "internet",
+    "wifi",
+    "phone bill",
+    "subscription",
+    "mtn",
+    "glo",
+    "airtel",
+    "9mobile",
+    "starlink",
   ],
   housing: [
     "rent",
@@ -137,6 +146,8 @@ const CATEGORY_KEYWORDS: Record<SpendingCategory, string[]> = {
     "investment",
     "emergency fund",
   ],
+  family: ["family", "kids", "children", "baby", "parents", "wife", "husband"],
+  debt: ["debt", "loan", "owing", "credit", "borrow", "refund", "repay"],
   other: ["other", "miscellaneous", "misc"],
 };
 
@@ -297,13 +308,18 @@ export function isGoalRelated(text: string): boolean {
 /**
  * Format amount for display
  */
-export function formatCurrency(amount: number): string {
-  if (amount >= 1000000) {
-    return `₦${(amount / 1000000).toFixed(1)}M`;
-  } else if (amount >= 1000) {
-    return `₦${(amount / 1000).toFixed(0)}k`;
+export function formatCurrency(
+  amount: number,
+  compact: boolean = false,
+): string {
+  if (compact) {
+    if (amount >= 1000000) {
+      return `₦${(amount / 1000000).toFixed(1)}M`;
+    } else if (amount >= 1000) {
+      return `₦${(amount / 1000).toFixed(0)}k`;
+    }
   }
-  return `₦${amount.toLocaleString()}`;
+  return `₦${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 
 /**

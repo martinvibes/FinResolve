@@ -15,6 +15,9 @@ import {
   type IncomeData,
   type SpendingSummary,
   type SpendingCategory,
+  type Account,
+  type Budget,
+  type RecurringItem,
   createEmptyProfile,
 } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
@@ -30,11 +33,24 @@ interface FinancialContextType {
   isLoading: boolean;
   isSyncing: boolean;
   updateIncome: (income: IncomeData) => void;
+  // Account methods
+  addAccount: (account: Account) => void;
+  updateAccount: (id: string, updates: Partial<Account>) => void;
+  deleteAccount: (id: string) => void;
+  // Budget methods
+  addBudget: (budget: Budget) => void;
+  updateBudget: (id: string, updates: Partial<Budget>) => void;
+  deleteBudget: (id: string) => void;
+  // Recurring methods
+  addRecurringItem: (item: RecurringItem) => void;
+  updateRecurringItem: (id: string, updates: Partial<RecurringItem>) => void;
+  deleteRecurringItem: (id: string) => void;
+  // Existing methods
   addSpending: (entry: SpendingEntry) => void;
   addSpendingSummary: (
     category: SpendingCategory,
     amount: number,
-    confidence: "high" | "medium" | "low"
+    confidence: "high" | "medium" | "low",
   ) => void;
   updateSpendingSummary: (summaries: SpendingSummary[]) => void;
   addGoal: (goal: SavingsGoal) => void;
@@ -48,7 +64,7 @@ interface FinancialContextType {
 }
 
 const FinancialContext = createContext<FinancialContextType | undefined>(
-  undefined
+  undefined,
 );
 
 // Provider component
@@ -77,17 +93,26 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
             .maybeSingle(); // Use maybeSingle to avoid error when no rows
 
           console.log("Profile query result:", {
-            dbProfile: dbProfile ? {
-              id: dbProfile.id,
-              user_id: dbProfile.user_id,
-              has_completed_onboarding: dbProfile.has_completed_onboarding,
-            } : null,
-            error
+            dbProfile: dbProfile
+              ? {
+                  id: dbProfile.id,
+                  user_id: dbProfile.user_id,
+                  has_completed_onboarding: dbProfile.has_completed_onboarding,
+                }
+              : null,
+            error,
           });
 
           if (dbProfile && !error) {
             // Load related data
-            const [spendingRes, summariesRes, goalsRes] = await Promise.all([
+            const [
+              spendingRes,
+              summariesRes,
+              goalsRes,
+              accountsRes,
+              budgetsRes,
+              recurringRes,
+            ] = await Promise.all([
               supabase
                 .from("spending_entries")
                 .select("*")
@@ -98,6 +123,18 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
                 .eq("profile_id", dbProfile.id),
               supabase
                 .from("savings_goals")
+                .select("*")
+                .eq("profile_id", dbProfile.id),
+              supabase
+                .from("accounts")
+                .select("*")
+                .eq("profile_id", dbProfile.id),
+              supabase
+                .from("budgets")
+                .select("*")
+                .eq("profile_id", dbProfile.id),
+              supabase
+                .from("recurring_items")
                 .select("*")
                 .eq("profile_id", dbProfile.id),
             ]);
@@ -130,6 +167,9 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
                 description: e.description || undefined,
                 date: e.date || undefined,
                 merchantName: e.merchant_name || undefined,
+                accountId: e.account_id || undefined,
+                isRecurring: e.is_recurring,
+                type: e.type as "expense" | "income" | "transfer",
               })),
               spendingSummary: (summariesRes.data || []).map((s) => ({
                 category: s.category as SpendingCategory,
@@ -146,21 +186,56 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
                 priority: g.priority as "high" | "medium" | "low",
                 createdAt: g.created_at,
               })),
+              accounts: (accountsRes.data || []).map((a) => ({
+                id: a.id,
+                name: a.name,
+                type: a.type as any,
+                balance: Number(a.balance),
+                currency: a.currency,
+                isPrimary: a.is_primary,
+              })),
+              budgets: (budgetsRes.data || []).map((b) => ({
+                id: b.id,
+                category: b.category as SpendingCategory,
+                limit: Number(b.limit_amount),
+                period: b.period as any,
+                spent:
+                  (summariesRes.data || []).find(
+                    (s) => s.category === b.category,
+                  )?.total || 0,
+              })),
+              recurringItems: (recurringRes.data || []).map((r) => ({
+                id: r.id,
+                name: r.name,
+                amount: Number(r.amount),
+                frequency: r.frequency as any,
+                nextDueDate: r.next_due_date || undefined,
+                category: (r.category as SpendingCategory) || "other",
+                isActive: r.is_active,
+              })),
               hasCompletedOnboarding: dbProfile.has_completed_onboarding,
               lastUpdated: dbProfile.updated_at,
               dataCompleteness: dbProfile.data_completeness,
             };
 
             setProfile(loadedProfile);
-            localStorage.setItem(getStorageKey(user.id), JSON.stringify(loadedProfile));
+            localStorage.setItem(
+              getStorageKey(user.id),
+              JSON.stringify(loadedProfile),
+            );
             console.log("Loaded profile for user:", user.id);
           } else {
             // No profile in Supabase - check localStorage as fallback
-            console.log("No profile in Supabase for user, checking localStorage");
+            console.log(
+              "No profile in Supabase for user, checking localStorage",
+            );
             const stored = localStorage.getItem(getStorageKey(user.id));
             if (stored) {
               const localProfile = JSON.parse(stored) as UserFinancialProfile;
-              console.log("Found localStorage profile, hasCompletedOnboarding:", localProfile.hasCompletedOnboarding);
+              console.log(
+                "Found localStorage profile, hasCompletedOnboarding:",
+                localProfile.hasCompletedOnboarding,
+              );
               // Use local profile and sync to Supabase
               setProfile(localProfile);
             } else {
@@ -205,7 +280,10 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
       setIsSyncing(true);
       try {
         // Save to localStorage first (immediate)
-        localStorage.setItem(getStorageKey(user.id), JSON.stringify(newProfile));
+        localStorage.setItem(
+          getStorageKey(user.id),
+          JSON.stringify(newProfile),
+        );
 
         // First, check if a profile already exists for this user
         const { data: existingProfile } = await supabase
@@ -219,7 +297,10 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         // Update the local profile with the correct ID if needed
         if (existingProfile?.id && existingProfile.id !== newProfile.id) {
           newProfile = { ...newProfile, id: existingProfile.id };
-          localStorage.setItem(getStorageKey(user.id), JSON.stringify(newProfile));
+          localStorage.setItem(
+            getStorageKey(user.id),
+            JSON.stringify(newProfile),
+          );
         }
 
         const profileData = {
@@ -251,6 +332,106 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
           return;
         }
 
+        // Sync Accounts
+        const { data: existingAccounts } = await supabase
+          .from("accounts")
+          .select("id")
+          .eq("profile_id", profileId);
+
+        const existingAccountIds = new Set(
+          existingAccounts?.map((a) => a.id) || [],
+        );
+        const currentAccountIds = new Set(newProfile.accounts.map((a) => a.id));
+
+        const accountsToDelete = [...existingAccountIds].filter(
+          (id) => !currentAccountIds.has(id),
+        );
+
+        if (accountsToDelete.length > 0) {
+          await supabase.from("accounts").delete().in("id", accountsToDelete);
+        }
+
+        if (newProfile.accounts.length > 0) {
+          const upserts = newProfile.accounts.map((a) => ({
+            id: a.id,
+            profile_id: profileId,
+            name: a.name,
+            type: a.type,
+            balance: a.balance,
+            currency: a.currency,
+            is_primary: a.isPrimary,
+          }));
+          await supabase.from("accounts").upsert(upserts);
+        }
+
+        // Sync Budgets
+        const { data: existingBudgets } = await supabase
+          .from("budgets")
+          .select("id")
+          .eq("profile_id", profileId);
+
+        const existingBudgetIds = new Set(
+          existingBudgets?.map((b) => b.id) || [],
+        );
+        const currentBudgetIds = new Set(newProfile.budgets.map((b) => b.id));
+
+        const budgetsToDelete = [...existingBudgetIds].filter(
+          (id) => !currentBudgetIds.has(id),
+        );
+
+        if (budgetsToDelete.length > 0) {
+          await supabase.from("budgets").delete().in("id", budgetsToDelete);
+        }
+
+        if (newProfile.budgets.length > 0) {
+          const upserts = newProfile.budgets.map((b) => ({
+            id: b.id,
+            profile_id: profileId,
+            category: b.category,
+            limit_amount: b.limit,
+            period: b.period,
+          }));
+          await supabase.from("budgets").upsert(upserts);
+        }
+
+        // Sync Recurring Items
+        const { data: existingRecurring } = await supabase
+          .from("recurring_items")
+          .select("id")
+          .eq("profile_id", profileId);
+
+        const existingRecurringIds = new Set(
+          existingRecurring?.map((r) => r.id) || [],
+        );
+        const currentRecurringIds = new Set(
+          newProfile.recurringItems.map((r) => r.id),
+        );
+
+        const recurringToDelete = [...existingRecurringIds].filter(
+          (id) => !currentRecurringIds.has(id),
+        );
+
+        if (recurringToDelete.length > 0) {
+          await supabase
+            .from("recurring_items")
+            .delete()
+            .in("id", recurringToDelete);
+        }
+
+        if (newProfile.recurringItems.length > 0) {
+          const upserts = newProfile.recurringItems.map((r) => ({
+            id: r.id,
+            profile_id: profileId,
+            name: r.name,
+            amount: r.amount,
+            frequency: r.frequency,
+            next_due_date: r.nextDueDate || null,
+            category: r.category,
+            is_active: r.isActive,
+          }));
+          await supabase.from("recurring_items").upsert(upserts);
+        }
+
         // Sync spending summaries
         if (newProfile.spendingSummary.length > 0) {
           // Delete existing summaries and insert new ones
@@ -276,20 +457,15 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
           .select("id")
           .eq("profile_id", newProfile.id);
 
-        const existingGoalIds = new Set(
-          existingGoals?.map((g) => g.id) || []
-        );
+        const existingGoalIds = new Set(existingGoals?.map((g) => g.id) || []);
         const currentGoalIds = new Set(newProfile.goals.map((g) => g.id));
 
         // Delete removed goals
         const goalsToDelete = [...existingGoalIds].filter(
-          (id) => !currentGoalIds.has(id)
+          (id) => !currentGoalIds.has(id),
         );
         if (goalsToDelete.length > 0) {
-          await supabase
-            .from("savings_goals")
-            .delete()
-            .in("id", goalsToDelete);
+          await supabase.from("savings_goals").delete().in("id", goalsToDelete);
         }
 
         // Upsert current goals
@@ -308,6 +484,37 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
           await supabase.from("savings_goals").upsert(goalsToUpsert);
         }
 
+        // Sync Spending Entries
+        if (newProfile.monthlySpending.length > 0) {
+          // For spending entries, we only upsert to avoid deleting historical data
+          // that might not be loaded in the current profile (if we only load monthly).
+          // However, assuming profile.monthlySpending contains ALL loaded entries we want to persist.
+          // Let's stick to upserting the current ones.
+
+          const upserts = newProfile.monthlySpending.map((entry) => ({
+            id: entry.id,
+            profile_id: profileId,
+            category: entry.category,
+            amount: entry.amount,
+            confidence: entry.confidence,
+            source: entry.source,
+            description: entry.description || null,
+            date: entry.date || null,
+            merchant_name: entry.merchantName || null,
+            account_id: entry.accountId || null,
+            is_recurring: entry.isRecurring || false,
+            type: entry.type || "expense",
+          }));
+
+          const { error: spendingError } = await supabase
+            .from("spending_entries")
+            .upsert(upserts);
+
+          if (spendingError) {
+            console.error("Error syncing spending entries:", spendingError);
+          }
+        }
+
         console.log("Profile synced to Supabase");
       } catch (error) {
         console.error("Failed to sync to Supabase:", error);
@@ -315,7 +522,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         setIsSyncing(false);
       }
     },
-    [user]
+    [user],
   );
 
   // Debounced save effect
@@ -343,7 +550,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
     if (profile.spendingSummary.length > 0) {
       score += Math.min(
         weights.spending,
-        (profile.spendingSummary.length / 5) * weights.spending
+        (profile.spendingSummary.length / 5) * weights.spending,
       );
     }
     if (profile.goals.length > 0) score += weights.goals;
@@ -361,13 +568,88 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  // --- NEW HELPER METHODS ---
+
+  const addAccount = useCallback((account: Account) => {
+    setProfile((p) => ({ ...p, accounts: [...p.accounts, account] }));
+  }, []);
+
+  const updateAccount = useCallback((id: string, updates: Partial<Account>) => {
+    setProfile((p) => ({
+      ...p,
+      accounts: p.accounts.map((a) => (a.id === id ? { ...a, ...updates } : a)),
+    }));
+  }, []);
+
+  const deleteAccount = useCallback((id: string) => {
+    setProfile((p) => ({
+      ...p,
+      accounts: p.accounts.filter((a) => a.id !== id),
+    }));
+  }, []);
+
+  const addBudget = useCallback((budget: Budget) => {
+    setProfile((p) => ({ ...p, budgets: [...p.budgets, budget] }));
+  }, []);
+
+  const updateBudget = useCallback((id: string, updates: Partial<Budget>) => {
+    setProfile((p) => ({
+      ...p,
+      budgets: p.budgets.map((b) => (b.id === id ? { ...b, ...updates } : b)),
+    }));
+  }, []);
+
+  const deleteBudget = useCallback((id: string) => {
+    setProfile((p) => ({
+      ...p,
+      budgets: p.budgets.filter((b) => b.id !== id),
+    }));
+  }, []);
+
+  const addRecurringItem = useCallback((item: RecurringItem) => {
+    setProfile((p) => ({ ...p, recurringItems: [...p.recurringItems, item] }));
+  }, []);
+
+  const updateRecurringItem = useCallback(
+    (id: string, updates: Partial<RecurringItem>) => {
+      setProfile((p) => ({
+        ...p,
+        recurringItems: p.recurringItems.map((r) =>
+          r.id === id ? { ...r, ...updates } : r,
+        ),
+      }));
+    },
+    [],
+  );
+
+  const deleteRecurringItem = useCallback((id: string) => {
+    setProfile((p) => ({
+      ...p,
+      recurringItems: p.recurringItems.filter((r) => r.id !== id),
+    }));
+  }, []);
+
   // Add spending entry
   const addSpending = useCallback((entry: SpendingEntry) => {
-    setProfile((prev) => ({
-      ...prev,
-      monthlySpending: [...prev.monthlySpending, entry],
-      lastUpdated: new Date().toISOString(),
-    }));
+    setProfile((prev) => {
+      // If linked to an account, deduct balance
+      let newAccounts = [...prev.accounts];
+      if (entry.accountId) {
+        newAccounts = newAccounts.map((acc) => {
+          if (acc.id === entry.accountId) {
+            return { ...acc, balance: acc.balance - entry.amount };
+          }
+          return acc;
+        });
+      }
+
+      return {
+        ...prev,
+        accounts: newAccounts,
+        monthlySpending: [...prev.monthlySpending, entry],
+        lastUpdated: new Date().toISOString(),
+      };
+    });
   }, []);
 
   // Add spending summary for a category
@@ -375,39 +657,47 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
     (
       category: SpendingCategory,
       amount: number,
-      confidence: "high" | "medium" | "low"
+      confidence: "high" | "medium" | "low",
     ) => {
       setProfile((prev) => {
-        const existing = prev.spendingSummary.find(
-          (s) => s.category === category
+        // Update summary
+        let newSummaries = [...prev.spendingSummary];
+        const existingIndex = newSummaries.findIndex(
+          (s) => s.category === category,
         );
-        if (existing) {
-          return {
-            ...prev,
-            spendingSummary: prev.spendingSummary.map((s) =>
-              s.category === category
-                ? {
-                    ...s,
-                    total: s.total + amount,
-                    transactionCount: s.transactionCount + 1,
-                  }
-                : s
-            ),
-            lastUpdated: new Date().toISOString(),
+
+        if (existingIndex >= 0) {
+          newSummaries[existingIndex] = {
+            ...newSummaries[existingIndex],
+            total: newSummaries[existingIndex].total + amount,
+            transactionCount: newSummaries[existingIndex].transactionCount + 1,
           };
         } else {
-          return {
-            ...prev,
-            spendingSummary: [
-              ...prev.spendingSummary,
-              { category, total: amount, confidence, transactionCount: 1 },
-            ],
-            lastUpdated: new Date().toISOString(),
-          };
+          newSummaries.push({
+            category,
+            total: amount,
+            confidence,
+            transactionCount: 1,
+          });
         }
+
+        // Update budget spent too
+        const newBudgets = prev.budgets.map((b) => {
+          if (b.category === category) {
+            return { ...b, spent: b.spent + amount };
+          }
+          return b;
+        });
+
+        return {
+          ...prev,
+          spendingSummary: newSummaries,
+          budgets: newBudgets,
+          lastUpdated: new Date().toISOString(),
+        };
       });
     },
-    []
+    [],
   );
 
   // Update spending summary
@@ -437,7 +727,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         lastUpdated: new Date().toISOString(),
       }));
     },
-    []
+    [],
   );
 
   // Delete goal
@@ -503,6 +793,15 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         isLoading,
         isSyncing,
         updateIncome,
+        addAccount,
+        updateAccount,
+        deleteAccount,
+        addBudget,
+        updateBudget,
+        deleteBudget,
+        addRecurringItem,
+        updateRecurringItem,
+        deleteRecurringItem,
         addSpending,
         addSpendingSummary,
         updateSpendingSummary,

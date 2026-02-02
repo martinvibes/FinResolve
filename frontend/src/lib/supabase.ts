@@ -5,7 +5,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn(
-    "Supabase credentials not found. Data will only be stored locally."
+    "Supabase credentials not found. Data will only be stored locally.",
   );
 }
 
@@ -37,6 +37,9 @@ export interface DbSpendingEntry {
   description: string | null;
   date: string | null;
   merchant_name: string | null;
+  account_id: string | null;
+  is_recurring: boolean;
+  type: string;
   created_at: string;
 }
 
@@ -60,4 +63,36 @@ export interface DbSavingsGoal {
   priority: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface DbAccount {
+  id: string;
+  profile_id: string;
+  name: string;
+  type: string;
+  balance: number;
+  currency: string;
+  is_primary: boolean;
+  created_at: string;
+}
+
+export interface DbBudget {
+  id: string;
+  profile_id: string;
+  category: string;
+  limit_amount: number;
+  period: string;
+  created_at: string;
+}
+
+export interface DbRecurringItem {
+  id: string;
+  profile_id: string;
+  name: string;
+  amount: number;
+  frequency: string;
+  next_due_date: string | null;
+  category: string | null;
+  is_active: boolean;
+  created_at: string;
 }

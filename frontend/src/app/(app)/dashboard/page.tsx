@@ -13,6 +13,9 @@ import { type UploadedTransaction, type SpendingEntry } from "@/lib/types";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { CommandBar } from "@/components/dashboard/CommandBar";
 import { FinancialPulseCards } from "@/components/dashboard/FinancialPulseCards";
+import { AccountCards } from "@/components/dashboard/AccountCards";
+import { BudgetProgress } from "@/components/dashboard/BudgetProgress";
+import { RecurringBills } from "@/components/dashboard/RecurringBills";
 import { RecentActivityFeed } from "@/components/dashboard/RecentActivityFeed";
 import { PrimaryGoalWidget } from "@/components/dashboard/PrimaryGoalWidget";
 import { SpendingChart } from "@/components/dashboard/SpendingChart";
@@ -50,9 +53,17 @@ function DashboardLoading() {
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { profile, mergeUploadedData, isLoading, updateGoal } = useFinancial();
+  const {
+    profile,
+    mergeUploadedData,
+    isLoading,
+    updateGoal,
+    addSpending,
+    addSpendingSummary,
+  } = useFinancial();
   const { user } = useAuth();
 
+  // ... existing logic ...
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -61,11 +72,19 @@ function DashboardContent() {
 
   // AI contextual nudge based on financial state
   const getAiNudge = () => {
-    const totalSpending = profile.spendingSummary.reduce((s, c) => s + c.total, 0);
+    // ... existing logic ...
+    const totalSpending = profile.spendingSummary.reduce(
+      (s, c) => s + c.total,
+      0,
+    );
     const monthlyIncome = profile.income?.amount || 0;
     const budgetRemaining = monthlyIncome - totalSpending;
     const today = new Date();
-    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const daysInMonth = new Date(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      0,
+    ).getDate();
     const daysRemaining = daysInMonth - today.getDate();
 
     if (budgetRemaining < 0) {
@@ -79,6 +98,8 @@ function DashboardContent() {
     }
     return undefined;
   };
+
+  // ... existing effects ...
 
   // Redirect to onboarding if not completed
   useEffect(() => {
@@ -115,6 +136,7 @@ function DashboardContent() {
   }, [searchParams]);
 
   const handleSend = (content: string) => {
+    // ... existing handleSend ...
     const newUserMsg: Message = {
       id: Date.now().toString(),
       role: "user",
@@ -126,7 +148,37 @@ function DashboardContent() {
 
     setTimeout(async () => {
       try {
-        const response = await generateAIResponse(content, profile);
+        // Map messages to simple format for history
+        const history = messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
+
+        const response = await generateAIResponse(content, profile, history);
+
+        // Handle AI Actions
+        if (response.action) {
+          const action = response.action;
+          if (action.type === "LOG_EXPENSE") {
+            const payload = action.payload;
+
+            // Add detailed entry
+            addSpending({
+              id: Date.now().toString(),
+              category: payload.category,
+              amount: payload.amount,
+              confidence: "high",
+              source: "ai",
+              description: payload.description,
+              date: new Date().toISOString(),
+              accountId: payload.accountId,
+            });
+
+            // Update summary
+            addSpendingSummary(payload.category, payload.amount, "high");
+          }
+        }
+
         const newAiMsg: Message = {
           id: (Date.now() + 1).toString(),
           role: "assistant",
@@ -150,6 +202,7 @@ function DashboardContent() {
     }, 100);
   };
 
+  // ... other handlers ...
   const handleUploadComplete = (transactions: UploadedTransaction[]) => {
     const spendingEntries: SpendingEntry[] = transactions
       .filter((t) => t.type === "debit")
@@ -189,7 +242,9 @@ function DashboardContent() {
 
   const handleSaveNow = () => {
     if (profile.goals.length > 0) {
-      handleSend(`I want to save money towards my ${profile.goals[0].name} goal`);
+      handleSend(
+        `I want to save money towards my ${profile.goals[0].name} goal`,
+      );
     } else {
       handleSend("Help me set up a savings goal");
     }
@@ -226,8 +281,17 @@ function DashboardContent() {
         {/* Left Panel - Data (70%) */}
         <div className="flex-1 lg:w-[70%] overflow-y-auto p-6 pb-24 lg:pb-6">
           <div className="max-w-5xl mx-auto space-y-6">
+            {/* Account Overview */}
+            <AccountCards />
+
             {/* Financial Pulse Cards */}
             <FinancialPulseCards />
+
+            {/* Budget & Recurring Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <BudgetProgress />
+              <RecurringBills />
+            </div>
 
             {/* Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

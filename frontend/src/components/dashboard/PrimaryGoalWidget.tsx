@@ -14,7 +14,12 @@ interface SaveNowModalProps {
   onSave: (amount: number) => void;
 }
 
-function SaveNowModal({ isOpen, onClose, goalName, onSave }: SaveNowModalProps) {
+function SaveNowModal({
+  isOpen,
+  onClose,
+  goalName,
+  onSave,
+}: SaveNowModalProps) {
   const [amount, setAmount] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -56,7 +61,19 @@ function SaveNowModal({ isOpen, onClose, goalName, onSave }: SaveNowModalProps) 
           <input
             type="text"
             value={amount}
-            onChange={(e) => setAmount(e.target.value.replace(/[^0-9,]/g, ""))}
+            onChange={(e) => {
+              const rawValue = e.target.value.replace(/[^0-9.]/g, "");
+              if (rawValue) {
+                const numberValue = parseFloat(rawValue);
+                if (!isNaN(numberValue)) {
+                  setAmount(numberValue.toLocaleString());
+                } else {
+                  setAmount(rawValue);
+                }
+              } else {
+                setAmount("");
+              }
+            }}
             placeholder="0"
             className="w-full px-4 py-3 text-2xl font-semibold text-slate-800 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           />
@@ -88,7 +105,7 @@ function SaveNowModal({ isOpen, onClose, goalName, onSave }: SaveNowModalProps) 
               "flex-1 py-3 text-sm font-medium text-white rounded-xl transition-colors flex items-center justify-center gap-2",
               amount && !isSaving
                 ? "bg-primary hover:bg-primary/90"
-                : "bg-slate-300 cursor-not-allowed"
+                : "bg-slate-300 cursor-not-allowed",
             )}
           >
             {isSaving ? (
@@ -153,7 +170,10 @@ export function PrimaryGoalWidget() {
     );
   }
 
-  const percentage = Math.min((primaryGoal.current / primaryGoal.target) * 100, 100);
+  const percentage = Math.min(
+    (primaryGoal.current / primaryGoal.target) * 100,
+    100,
+  );
   const remaining = primaryGoal.target - primaryGoal.current;
 
   const handleSave = (amount: number) => {
@@ -179,19 +199,23 @@ export function PrimaryGoalWidget() {
             <div className="p-2 bg-primary/10 rounded-lg">
               <Target className="w-4 h-4 text-primary" />
             </div>
-            <h3 className="text-sm font-semibold text-slate-800">Primary Goal</h3>
+            <h3 className="text-sm font-semibold text-slate-800">
+              Primary Goal
+            </h3>
           </div>
           <span
             className={cn(
               "text-xs font-medium px-2 py-1 rounded-full text-white",
-              priorityColors[primaryGoal.priority]
+              priorityColors[primaryGoal.priority],
             )}
           >
             {primaryGoal.priority}
           </span>
         </div>
 
-        <h4 className="text-lg font-bold text-slate-800 mb-1">{primaryGoal.name}</h4>
+        <h4 className="text-lg font-bold text-slate-800 mb-1">
+          {primaryGoal.name}
+        </h4>
         <p className="text-sm text-slate-500 mb-4">
           {formatCurrency(remaining)} to go
           {primaryGoal.deadline && ` • Due ${primaryGoal.deadline}`}
@@ -211,7 +235,10 @@ export function PrimaryGoalWidget() {
               initial={{ width: 0 }}
               animate={{ width: `${percentage}%` }}
               transition={{ duration: 0.8, ease: "easeOut" }}
-              className={cn("h-full rounded-full", priorityColors[primaryGoal.priority])}
+              className={cn(
+                "h-full rounded-full",
+                priorityColors[primaryGoal.priority],
+              )}
             />
           </div>
           <p className="text-xs text-slate-500 mt-1 text-right">
@@ -225,7 +252,7 @@ export function PrimaryGoalWidget() {
             "w-full py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2",
             justSaved
               ? "bg-emerald-500 text-white"
-              : "bg-primary text-white hover:bg-primary/90"
+              : "bg-primary text-white hover:bg-primary/90",
           )}
         >
           {justSaved ? (
