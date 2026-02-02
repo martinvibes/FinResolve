@@ -2,35 +2,32 @@
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ChatInput } from "@/components/chat/ChatInput";
-import { ChatMessage, type Role } from "@/components/chat/ChatMessage";
-import { SuggestedQuestions } from "@/components/chat/SuggestedQuestions";
-import { SpendingChart } from "@/components/dashboard/SpendingChart";
-import { GoalCard } from "@/components/dashboard/GoalCard";
 import { StatementUploadModal } from "@/components/modals/StatementUploadModal";
-import { TrendingUp, Wallet, Upload, MessageSquare, LogOut } from "lucide-react";
 import { useFinancial } from "@/contexts/FinancialContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { generateAIResponse } from "@/actions/ai";
 import { getGreeting } from "@/lib/aiLogic";
-import { formatCurrency } from "@/lib/parseInput";
 import { type UploadedTransaction, type SpendingEntry } from "@/lib/types";
 
-interface Message {
-  id: string;
-  role: Role;
-  content: string;
-  confidence?: "high" | "medium" | "low";
-  assumptions?: string[];
-}
+// New components
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { CommandBar } from "@/components/dashboard/CommandBar";
+import { FinancialPulseCards } from "@/components/dashboard/FinancialPulseCards";
+import { RecentActivityFeed } from "@/components/dashboard/RecentActivityFeed";
+import { PrimaryGoalWidget } from "@/components/dashboard/PrimaryGoalWidget";
+import { SpendingChart } from "@/components/dashboard/SpendingChart";
+import { TrendChart } from "@/components/dashboard/TrendChart";
+import { ChatPanel, type Message } from "@/components/chat/ChatPanel";
+import { ChatDrawer } from "@/components/chat/ChatDrawer";
+import { MobileChatInput } from "@/components/chat/MobileChatInput";
 
 const SUGGESTIONS = [
   "Where is my money going?",
   "Can I afford a ₦50k purchase?",
   "How much can I save this month?",
+  "Analyze my spending habits",
 ];
 
-// Wrapper component to handle Suspense for useSearchParams
 export default function DashboardPage() {
   return (
     <Suspense fallback={<DashboardLoading />}>
@@ -53,20 +50,37 @@ function DashboardLoading() {
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { profile, mergeUploadedData, isLoading } = useFinancial();
-  const { user, signOut } = useAuth();
+  const { profile, mergeUploadedData, isLoading, updateGoal } = useFinancial();
+  const { user } = useAuth();
 
-  const handleSignOut = async () => {
-    await signOut();
-    router.push("/login");
-  };
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
   const hasInitialized = useRef(false);
 
-  // Redirect to onboarding if authenticated user hasn't completed it
+  // AI contextual nudge based on financial state
+  const getAiNudge = () => {
+    const totalSpending = profile.spendingSummary.reduce((s, c) => s + c.total, 0);
+    const monthlyIncome = profile.income?.amount || 0;
+    const budgetRemaining = monthlyIncome - totalSpending;
+    const today = new Date();
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const daysRemaining = daysInMonth - today.getDate();
+
+    if (budgetRemaining < 0) {
+      return "You're over budget this month. Let's talk about it.";
+    }
+    if (daysRemaining <= 5 && budgetRemaining > 0) {
+      return `${daysRemaining} days left - you're doing great!`;
+    }
+    if (profile.goals.length === 0) {
+      return "Ready to set a savings goal?";
+    }
+    return undefined;
+  };
+
+  // Redirect to onboarding if not completed
   useEffect(() => {
     if (!isLoading && user && !profile.hasCompletedOnboarding) {
       router.push("/onboarding");
@@ -96,15 +110,9 @@ function DashboardContent() {
   useEffect(() => {
     if (searchParams.get("upload") === "true") {
       setShowUploadModal(true);
-      // Clear the param
       window.history.replaceState({}, "", "/dashboard");
     }
   }, [searchParams]);
-
-  // Scroll to bottom on new messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
 
   const handleSend = (content: string) => {
     const newUserMsg: Message = {
@@ -116,11 +124,9 @@ function DashboardContent() {
     setMessages((prev) => [...prev, newUserMsg]);
     setIsTyping(true);
 
-    // Generate AI response via Server Action (with Opik tracing)
     setTimeout(async () => {
       try {
         const response = await generateAIResponse(content, profile);
-        console.log("🤖 AI Response:", response);
         const newAiMsg: Message = {
           id: (Date.now() + 1).toString(),
           role: "assistant",
@@ -141,11 +147,10 @@ function DashboardContent() {
       } finally {
         setIsTyping(false);
       }
-    }, 100); // Small delay to allow UI update before server call
+    }, 100);
   };
 
   const handleUploadComplete = (transactions: UploadedTransaction[]) => {
-    // Convert transactions to spending entries
     const spendingEntries: SpendingEntry[] = transactions
       .filter((t) => t.type === "debit")
       .map((t) => ({
@@ -161,23 +166,34 @@ function DashboardContent() {
     mergeUploadedData(spendingEntries);
     setShowUploadModal(false);
 
-    // Add confirmation message
     const msg: Message = {
       id: Date.now().toString(),
       role: "assistant",
-      content: `Great! I've imported ${transactions.length} transactions from your statement. 📊\n\nYour spending data is now more accurate. Ask me anything about your finances!`,
+      content: `Great! I've imported ${transactions.length} transactions from your statement. Your spending data is now more accurate. Ask me anything about your finances!`,
     };
     setMessages((prev) => [...prev, msg]);
   };
 
-  // Calculate dashboard stats
-  const totalSpending = profile.spendingSummary.reduce(
-    (sum, s) => sum + s.total,
-    0,
-  );
-  const monthlyIncome = profile.income?.amount || 0;
-  const budgetRemaining = monthlyIncome - totalSpending;
-  const totalSaved = profile.goals.reduce((sum, g) => sum + g.current, 0);
+  // Command bar handlers
+  const handleCommandSearch = (query: string) => {
+    handleSend(query);
+  };
+
+  const handleAddExpense = () => {
+    handleSend("I want to log an expense");
+  };
+
+  const handleAnalyze = () => {
+    handleSend("Analyze my spending this month");
+  };
+
+  const handleSaveNow = () => {
+    if (profile.goals.length > 0) {
+      handleSend(`I want to save money towards my ${profile.goals[0].name} goal`);
+    } else {
+      handleSend("Help me set up a savings goal");
+    }
+  };
 
   // Show loading or onboarding redirect
   if (isLoading || !profile.hasCompletedOnboarding) {
@@ -192,165 +208,74 @@ function DashboardContent() {
   }
 
   return (
-    <div className="flex h-screen max-h-screen overflow-hidden bg-gray-50/50">
-      {/* Chat Section (Main) */}
-      <div className="flex-1 flex flex-col h-full relative">
-        {/* Header Area */}
-        <header className="px-6 py-4 bg-white/50 backdrop-blur-sm sticky top-0 z-10 border-b border-gray-100 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <h1 className="text-lg font-semibold text-gray-800">
-              Financial Coach
-            </h1>
-            {user && (
-              <span className="text-xs text-slate-400 hidden sm:inline">
-                {user.email}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowUploadModal(true)}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-primary hover:bg-primary/5 rounded-xl transition-colors"
-            >
-              <Upload className="w-4 h-4" />
-              <span className="hidden sm:inline">Upload Statement</span>
-            </button>
-            {user && (
-              <button
-                onClick={handleSignOut}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">Sign Out</span>
-              </button>
-            )}
-          </div>
-        </header>
+    <div className="min-h-screen bg-gray-50/50">
+      {/* Header */}
+      <DashboardHeader aiNudge={getAiNudge()} />
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 scroll-smooth">
-          <div className="max-w-3xl mx-auto space-y-4">
-            {messages.length === 0 ? (
-              <EmptyState onSuggest={handleSend} />
-            ) : (
-              messages.map((msg) => (
-                <div key={msg.id}>
-                  <ChatMessage role={msg.role} content={msg.content} />
-                  {msg.assumptions && msg.assumptions.length > 0 && (
-                    <div className="ml-12 mt-1 text-xs text-slate-400 italic">
-                      ⚠️ {msg.assumptions.join(", ")}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
+      {/* Command Bar */}
+      <CommandBar
+        onSearch={handleCommandSearch}
+        onAddExpense={handleAddExpense}
+        onAnalyze={handleAnalyze}
+        onSaveNow={handleSaveNow}
+        onUpload={() => setShowUploadModal(true)}
+      />
 
-            {/* Typing indicator */}
-            {isTyping && (
-              <div className="flex items-center gap-3 p-4">
-                <div className="flex bg-primary/10 w-8 h-8 rounded-full items-center justify-center">
-                  <div className="flex gap-1">
-                    <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" />
-                    <span
-                      className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.1s" }}
-                    />
-                    <span
-                      className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"
-                      style={{ animationDelay: "0.2s" }}
-                    />
-                  </div>
-                </div>
+      {/* Main Content: 70/30 Split on Desktop */}
+      <div className="flex h-[calc(100vh-130px)]">
+        {/* Left Panel - Data (70%) */}
+        <div className="flex-1 lg:w-[70%] overflow-y-auto p-6 pb-24 lg:pb-6">
+          <div className="max-w-5xl mx-auto space-y-6">
+            {/* Financial Pulse Cards */}
+            <FinancialPulseCards />
+
+            {/* Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="h-[400px]">
+                <TrendChart />
               </div>
-            )}
+              <div className="h-[400px]">
+                <SpendingChart />
+              </div>
+            </div>
 
-            <div ref={messagesEndRef} />
+            {/* Bottom Row: Activity & Goal */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <RecentActivityFeed />
+              <PrimaryGoalWidget />
+            </div>
           </div>
         </div>
 
-        {/* Input */}
-        <div className="p-4 bg-linear-to-t from-white via-white to-transparent pb-8">
-          <div className="max-w-3xl mx-auto flex flex-col gap-4">
-            <SuggestedQuestions questions={SUGGESTIONS} onSelect={handleSend} />
-            <ChatInput onSend={handleSend} disabled={isTyping} />
-          </div>
+        {/* Right Panel - Chat (30%) - Desktop Only */}
+        <div className="hidden lg:block w-[30%] min-w-[320px] max-w-[400px] border-l border-gray-200 h-full">
+          <ChatPanel
+            messages={messages}
+            isTyping={isTyping}
+            onSend={handleSend}
+            suggestions={SUGGESTIONS}
+          />
         </div>
       </div>
 
-      {/* Dashboard Section (Right Sidebar - Desktop Only) */}
-      <div className="hidden xl:block w-96 border-l border-border bg-white h-full overflow-y-auto p-6 space-y-8">
-        <div>
-          <h2 className="text-sm uppercase tracking-wider text-gray-400 font-semibold mb-4">
-            Daily Snapshot
-          </h2>
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-green-50 p-4 rounded-2xl">
-              <div className="flex items-center gap-2 mb-1">
-                <Wallet className="w-4 h-4 text-green-600" />
-                <span className="text-xs font-medium text-green-700">
-                  Budget Left
-                </span>
-              </div>
-              <p className="text-xl font-bold text-green-800">
-                {budgetRemaining > 0 ? formatCurrency(budgetRemaining) : "—"}
-              </p>
-            </div>
-            <div className="bg-blue-50 p-4 rounded-2xl">
-              <div className="flex items-center gap-2 mb-1">
-                <TrendingUp className="w-4 h-4 text-blue-600" />
-                <span className="text-xs font-medium text-blue-700">Saved</span>
-              </div>
-              <p className="text-xl font-bold text-blue-800">
-                {totalSaved > 0 ? formatCurrency(totalSaved) : "—"}
-              </p>
-            </div>
-          </div>
+      {/* Mobile Chat Input */}
+      <MobileChatInput
+        onSend={handleSend}
+        onOpenDrawer={() => setIsChatDrawerOpen(true)}
+        disabled={isTyping}
+      />
 
-          {profile.spendingSummary.length > 0 ? (
-            <div className="h-64">
-              <SpendingChart />
-            </div>
-          ) : (
-            <div className="h-64 flex items-center justify-center bg-slate-50 rounded-2xl">
-              <p className="text-sm text-slate-400 text-center px-4">
-                Tell me about your spending to see charts here
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-28">
-          <h2 className="text-sm uppercase tracking-wider text-gray-400 font-semibold mb-4">
-            Active Goals
-          </h2>
-          <div className="space-y-4">
-            {profile.goals.length > 0 ? (
-              profile.goals.map((goal) => (
-                <GoalCard
-                  key={goal.id}
-                  title={goal.name}
-                  target={goal.target}
-                  current={goal.current}
-                  deadline={goal.deadline || undefined}
-                  color={
-                    goal.priority === "high"
-                      ? "bg-emerald-500"
-                      : goal.priority === "medium"
-                        ? "bg-blue-500"
-                        : "bg-slate-500"
-                  }
-                />
-              ))
-            ) : (
-              <div className="p-6 bg-slate-50 rounded-2xl text-center">
-                <p className="text-sm text-slate-500">
-                  Tell me what you&apos;re saving for!
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Mobile Chat Drawer */}
+      <ChatDrawer
+        isOpen={isChatDrawerOpen}
+        onClose={() => setIsChatDrawerOpen(false)}
+        messages={messages}
+        isTyping={isTyping}
+        onSend={(msg) => {
+          handleSend(msg);
+        }}
+        suggestions={SUGGESTIONS}
+      />
 
       {/* Upload Modal */}
       <StatementUploadModal
@@ -358,39 +283,6 @@ function DashboardContent() {
         onClose={() => setShowUploadModal(false)}
         onComplete={handleUploadComplete}
       />
-    </div>
-  );
-}
-
-// Empty state component
-function EmptyState({ onSuggest }: { onSuggest: (q: string) => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
-        <MessageSquare className="w-8 h-8 text-primary" />
-      </div>
-      <h2 className="text-xl font-semibold text-slate-800 mb-2">
-        Hey! Let&rsquo;s talk about your money
-      </h2>
-      <p className="text-slate-500 max-w-md mb-8">
-        Ask me anything about your finances. I&apos;ll help you understand where
-        your money goes and how to make it work better for you.
-      </p>
-      <div className="flex flex-wrap gap-2 justify-center">
-        {[
-          "Where does my money go?",
-          "Help me budget",
-          "Am I saving enough?",
-        ].map((q) => (
-          <button
-            key={q}
-            onClick={() => onSuggest(q)}
-            className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-gray-50 hover:border-gray-300 transition-colors"
-          >
-            {q}
-          </button>
-        ))}
-      </div>
     </div>
   );
 }

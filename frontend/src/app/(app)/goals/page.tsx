@@ -56,6 +56,7 @@ export default function GoalsPage() {
           profile.goals.map((goal) => (
             <GoalCard
               key={goal.id}
+              id={goal.id}
               title={goal.name}
               target={goal.target}
               current={goal.current}

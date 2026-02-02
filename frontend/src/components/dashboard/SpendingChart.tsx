@@ -1,15 +1,81 @@
 "use client";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { useFinancial } from "@/contexts/FinancialContext";
+import { CATEGORY_META, type SpendingCategory } from "@/lib/types";
+import { formatCurrency } from "@/lib/parseInput";
 
-const data = [
-  { name: "Food", value: 45000, color: "#ef4444" },
-  { name: "Transport", value: 15000, color: "#f59e0b" },
-  { name: "Rent", value: 120000, color: "#3b82f6" },
-  { name: "Savings", value: 50000, color: "#10b981" },
-];
+// Color palette for categories
+const CATEGORY_COLORS: Record<SpendingCategory, string> = {
+  food: "#f97316",
+  transport: "#3b82f6",
+  utilities: "#8b5cf6",
+  housing: "#ec4899",
+  entertainment: "#06b6d4",
+  shopping: "#10b981",
+  health: "#ef4444",
+  education: "#f59e0b",
+  savings: "#22c55e",
+  other: "#6b7280",
+};
+
+function ChartSkeleton() {
+  return (
+    <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col h-full animate-pulse">
+      <div className="h-5 w-40 bg-slate-200 rounded mb-4" />
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-40 h-40 bg-slate-200 rounded-full" />
+      </div>
+      <div className="flex justify-center gap-4 mt-6">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-slate-200 rounded-full" />
+            <div className="w-12 h-3 bg-slate-200 rounded" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function SpendingChart() {
+  const { profile, isLoading } = useFinancial();
+
+  if (isLoading) {
+    return <ChartSkeleton />;
+  }
+
+  // Transform profile.spendingSummary into chart data
+  const chartData = profile.spendingSummary
+    .filter((s) => s.total > 0)
+    .map((summary) => ({
+      name: CATEGORY_META[summary.category].label,
+      value: summary.total,
+      color: CATEGORY_COLORS[summary.category],
+      category: summary.category,
+    }))
+    .sort((a, b) => b.value - a.value);
+
+  const totalSpending = chartData.reduce((sum, item) => sum + item.value, 0);
+
+  if (chartData.length === 0) {
+    return (
+      <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col h-full">
+        <h3 className="text-lg font-semibold mb-4 text-slate-800">
+          Spending This Month
+        </h3>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-sm text-slate-400">No spending data yet</p>
+            <p className="text-xs text-slate-400 mt-1">
+              Tell me about your expenses or upload a statement
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col h-full">
       <h3 className="text-lg font-semibold mb-4 text-slate-800">
@@ -19,21 +85,18 @@ export function SpendingChart() {
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={data}
+              data={chartData}
               innerRadius={60}
               outerRadius={80}
               paddingAngle={5}
               dataKey="value"
             >
-              {data.map((entry, index) => (
+              {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: any) => [
-                `₦${Number(value).toLocaleString()}`,
-                "Amount",
-              ]}
+              formatter={(value) => [formatCurrency(Number(value)), "Amount"]}
               contentStyle={{
                 borderRadius: "12px",
                 border: "none",
@@ -46,14 +109,14 @@ export function SpendingChart() {
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center">
             <span className="block text-2xl font-bold text-slate-800">
-              ₦230k
+              {formatCurrency(totalSpending).replace(".00", "")}
             </span>
             <span className="text-xs text-gray-500">Total</span>
           </div>
         </div>
       </div>
       <div className="flex justify-center gap-x-4 gap-y-2 mt-6 flex-wrap">
-        {data.map((item) => (
+        {chartData.slice(0, 4).map((item) => (
           <div key={item.name} className="flex items-center gap-2">
             <div
               className="w-2 h-2 rounded-full"
