@@ -5,13 +5,23 @@ import { SpendingChart } from "@/components/dashboard/SpendingChart";
 import { TrendChart } from "@/components/dashboard/TrendChart";
 import { ArrowDown, ArrowUp, Zap, Plus } from "lucide-react";
 import { AddTransactionModal } from "@/components/modals/AddTransactionModal";
+import { useFinancial } from "@/contexts/FinancialContext";
+import type { SpendingCategory } from "@/lib/types";
 
 export default function AnalysisPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { addSpending } = useFinancial();
 
-  const handleAddTransaction = (data: any) => {
-    console.log("New Transaction:", data);
-    // In a real app, this would update state or backend
+  const handleAddTransaction = (data: { amount: string; category: string; description: string }) => {
+    addSpending({
+      id: crypto.randomUUID(),
+      category: data.category.toLowerCase() as SpendingCategory,
+      amount: parseFloat(data.amount),
+      confidence: "high",
+      source: "manual",
+      description: data.description || undefined,
+      date: new Date().toISOString(),
+    });
   };
 
   return (

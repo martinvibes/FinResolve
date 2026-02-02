@@ -4,12 +4,22 @@ import { useState } from "react";
 import { GoalCard } from "@/components/dashboard/GoalCard";
 import { Plus, Trophy } from "lucide-react";
 import { AddGoalModal } from "@/components/modals/AddGoalModal";
+import { useFinancial } from "@/contexts/FinancialContext";
 
 export default function GoalsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { addGoal, profile } = useFinancial();
 
-  const handleAddGoal = (data: any) => {
-    console.log("New Goal:", data);
+  const handleAddGoal = (data: { title: string; targetAmount: string; deadline: string; color: string }) => {
+    addGoal({
+      id: crypto.randomUUID(),
+      name: data.title,
+      target: parseFloat(data.targetAmount),
+      current: 0,
+      deadline: data.deadline,
+      priority: "medium",
+      createdAt: new Date().toISOString(),
+    });
   };
 
   return (
@@ -38,27 +48,22 @@ export default function GoalsPage() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <GoalCard
-          title="Emergency Fund"
-          target={1000000}
-          current={250000}
-          deadline="Dec 2024"
-          color="bg-emerald-500"
-        />
-        <GoalCard
-          title="New MacBook"
-          target={2500000}
-          current={500000}
-          deadline="June 2024"
-          color="bg-blue-500"
-        />
-        <GoalCard
-          title="Vacation to Zanzibar"
-          target={1500000}
-          current={0}
-          deadline="Aug 2024"
-          color="bg-orange-400"
-        />
+        {profile.goals.length === 0 ? (
+          <div className="col-span-full text-center py-12 text-gray-500">
+            <p>No goals yet. Create your first goal to start tracking!</p>
+          </div>
+        ) : (
+          profile.goals.map((goal) => (
+            <GoalCard
+              key={goal.id}
+              title={goal.name}
+              target={goal.target}
+              current={goal.current}
+              deadline={goal.deadline || "No deadline"}
+              color="bg-blue-500"
+            />
+          ))
+        )}
       </div>
 
       {/* Completed/Gamification Section */}
