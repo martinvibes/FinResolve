@@ -17,9 +17,15 @@ const CATEGORY_COLORS: Record<SpendingCategory, string> = {
   education: "#f59e0b",
   savings: "#22c55e",
   other: "#6b7280",
-  data_airtime: "#0ea5e9", // Sky blue
-  family: "#f43f5e", // Rose
-  debt: "#b91c1c", // Dark red
+  data_airtime: "#0ea5e9",
+  family: "#f43f5e",
+  debt: "#b91c1c",
+  personal_care: "#f472b6",
+  investment: "#6366f1",
+  tax: "#64748b",
+  salary: "#16a34a",
+  business: "#0891b2",
+  gift: "#db2777",
 };
 
 function ChartSkeleton() {

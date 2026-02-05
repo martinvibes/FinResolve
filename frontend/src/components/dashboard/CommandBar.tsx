@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, TrendingUp, PiggyBank, Upload } from "lucide-react";
+import { Plus, TrendingUp, PiggyBank, Upload, Gauge } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CommandBarProps {
@@ -8,6 +8,7 @@ interface CommandBarProps {
   onAnalyze: () => void;
   onSaveNow: () => void;
   onUpload: () => void;
+  onViewScore: () => void;
 }
 
 export function CommandBar({
@@ -15,8 +16,16 @@ export function CommandBar({
   onAnalyze,
   onSaveNow,
   onUpload,
+  onViewScore,
 }: CommandBarProps) {
   const quickActions = [
+    {
+      label: "My Score",
+      icon: Gauge,
+      onClick: onViewScore,
+      color: "bg-gradient-to-r from-violet-500 to-purple-600 text-white hover:from-violet-600 hover:to-purple-700 shadow-md shadow-purple-200",
+      highlight: true,
+    },
     {
       label: "Expense",
       icon: Plus,

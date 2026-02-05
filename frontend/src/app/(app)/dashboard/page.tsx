@@ -22,6 +22,7 @@ import { RecentActivityFeed } from "@/components/dashboard/RecentActivityFeed";
 import { PrimaryGoalWidget } from "@/components/dashboard/PrimaryGoalWidget";
 import { SpendingChart } from "@/components/dashboard/SpendingChart";
 import { TrendChart } from "@/components/dashboard/TrendChart";
+import { FinResolveScoreModal } from "@/components/dashboard/FinResolveScoreModal";
 import { ChatPanel, type Message } from "@/components/chat/ChatPanel";
 import { ChatDrawer } from "@/components/chat/ChatDrawer";
 import { MobileChatInput } from "@/components/chat/MobileChatInput";
@@ -71,6 +72,7 @@ function DashboardContent() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showScoreModal, setShowScoreModal] = useState(false);
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
   const hasInitialized = useRef(false);
 
@@ -385,6 +387,7 @@ function DashboardContent() {
         onAnalyze={handleAnalyze}
         onSaveNow={handleSaveNow}
         onUpload={() => setShowUploadModal(true)}
+        onViewScore={() => setShowScoreModal(true)}
       />
 
       {/* Main Content: 70/30 Split on Desktop */}
@@ -457,6 +460,12 @@ function DashboardContent() {
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}
         onComplete={handleUploadComplete}
+      />
+
+      {/* FinResolve Score Modal */}
+      <FinResolveScoreModal
+        isOpen={showScoreModal}
+        onClose={() => setShowScoreModal(false)}
       />
     </div>
   );
