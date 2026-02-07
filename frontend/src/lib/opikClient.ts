@@ -1,13 +1,19 @@
 import { Opik } from "opik";
 
-// Initialize Opik client with full configuration
-// Environment variables: OPIK_API_KEY, OPIK_WORKSPACE, OPIK_PROJECT_NAME, OPIK_URL_OVERRIDE
-export const opikClient = new Opik({
-  projectName: process.env.OPIK_PROJECT_NAME || "FinResolve1",
-  apiKey: process.env.OPIK_API_KEY,
-  workspaceName: process.env.OPIK_WORKSPACE,
-  apiUrl: process.env.OPIK_URL_OVERRIDE || "https://www.comet.com/opik/api",
-});
+// Lazy initialization to prevent top-level crashes if env vars are missing during build/import
+let opikInstance: Opik | null = null;
+
+export function getOpikClient() {
+  if (!opikInstance) {
+    opikInstance = new Opik({
+      projectName: process.env.OPIK_PROJECT_NAME || "FinResolve1",
+      apiKey: process.env.OPIK_API_KEY || "",
+      workspaceName: process.env.OPIK_WORKSPACE || "",
+      apiUrl: process.env.OPIK_URL_OVERRIDE || "https://www.comet.com/opik/api",
+    });
+  }
+  return opikInstance;
+}
 
 /**
  * Configure Opik for the current session

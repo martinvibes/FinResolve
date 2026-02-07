@@ -347,13 +347,23 @@ function DashboardContent() {
           assumptions: response.assumptions,
         };
         setMessages((prev) => [...prev, newAiMsg]);
-      } catch (error) {
-        console.error("Failed to get response", error);
+      } catch (error: any) {
+        console.error("AI Error:", error);
+
+        // Try to get a more specific message if it's a structural error
+        let displayError =
+          "Sorry, I'm having trouble thinking right now. Please try again.";
+
+        if (error?.message) {
+          // If it's a Next.js Server Action error, it might be masked.
+          // In development/production, we can try to extract more info.
+          displayError = `AI Connection Error: ${error.message}`;
+        }
+
         const errorMsg: Message = {
           id: (Date.now() + 1).toString(),
           role: "assistant",
-          content:
-            "Sorry, I'm having trouble thinking right now. Please try again.",
+          content: displayError,
         };
         setMessages((prev) => [...prev, errorMsg]);
       } finally {

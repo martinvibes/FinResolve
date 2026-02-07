@@ -1,7 +1,7 @@
 "use server";
 
-import { opikClient } from "@/lib/opikClient";
-import { openai, OPENAI_MODEL_NAME } from "@/lib/openaiClient";
+import { getOpikClient } from "@/lib/opikClient";
+import { getOpenAIClient, OPENAI_MODEL_NAME } from "@/lib/openaiClient";
 import {
   type UserFinancialProfile,
   type AIAction,
@@ -14,8 +14,7 @@ import { formatCurrency } from "@/lib/parseInput";
 // Helper to log to terminal
 function terminalLog(message: string, data?: unknown) {
   const timestamp = new Date().toLocaleTimeString();
-  const prefix = `\x1b[36m[FinResolve AI ${timestamp}]\x1b[0m`; // Cyan color
-  console.log(`${prefix} ${message}`);
+  console.log(`[AI ${timestamp}] ${message}`);
   if (data) {
     console.log(JSON.stringify(data, null, 2));
   }
@@ -130,7 +129,7 @@ function buildSystemPrompt(profile: UserFinancialProfile): string {
     string,
     { income: number; expenses: number; topCats: Record<string, number> }
   > = {};
-  const allTransactions = [...profile.monthlySpending].sort(
+  const allTransactions = [...(profile.monthlySpending || [])].sort(
     (a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime(),
   );
 
@@ -384,6 +383,7 @@ export async function generateAIResponse(
 
     // 3. Call OpenAI API
     console.log(`[AI] Calling OpenAI with model: ${OPENAI_MODEL_NAME}...`);
+    const openai = getOpenAIClient();
     const completion = await openai.chat.completions.create({
       model: OPENAI_MODEL_NAME,
       messages: messages,
@@ -402,6 +402,7 @@ export async function generateAIResponse(
 
     // Opik Tracing (wrapped to prevent blocking the response)
     try {
+      const opikClient = getOpikClient();
       const trace = opikClient.trace({
         name: "financial-advice",
         input: {
@@ -442,15 +443,14 @@ export async function generateAIResponse(
       });
       span.end();
       trace.end();
-      await opikClient.flush();
-      console.log("[AI] Opik tracing completed");
+      // await opikClient.flush(); // Disabled in production to prevent hanging the server action
+      console.log("[AI] Opik tracing ended (skipping flush for performance)");
     } catch (opikError) {
       console.warn("[AI] Opik tracing failed (ignoring):", opikError);
     }
 
-    terminalLog(
-      `Generated response (${latency}ms, ${tokenUsage.totalTokens} tokens):`,
-      responseText,
+    console.log(
+      `[AI] Response generated (${latency}ms, ${tokenUsage.totalTokens} tokens)`,
     );
 
     // Parse for actions
