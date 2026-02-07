@@ -56,7 +56,7 @@ export function AddGoalModal({ isOpen, onClose, onAdd }: AddGoalModalProps) {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Target Amount (₦)
+            Target Amount ($)
           </label>
           <input
             type="number"
