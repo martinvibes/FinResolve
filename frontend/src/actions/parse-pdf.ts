@@ -1,6 +1,15 @@
 "use server";
 
 import { openai, OPENAI_MODEL_NAME } from "@/lib/openaiClient";
+import { type UploadedTransaction } from "@/lib/types";
+// @ts-ignore
+import { PDFParse } from "pdf-parse";
+
+export type PDFParseResult = {
+  success: boolean;
+  transactions?: UploadedTransaction[];
+  error?: string;
+};
 
 // Polyfill for PDF.js in Node environment (required by pdf-parse)
 // @ts-ignore
@@ -17,29 +26,13 @@ if (typeof DOMMatrix === "undefined") {
   };
 }
 
-// @ts-ignore
-let pdf = require("pdf-parse");
-
-// @ts-ignore
-if (typeof pdf !== "function") {
-  // @ts-ignore
-  if (pdf.default) {
-    // @ts-ignore
-    pdf = pdf.default;
-  } else if (pdf.PDFParse) {
-    // @ts-ignore
-    pdf = pdf.PDFParse;
-  }
-}
-import { type UploadedTransaction } from "@/lib/types";
-
 export async function parsePDFStatement(
   formData: FormData,
-): Promise<UploadedTransaction[]> {
+): Promise<PDFParseResult> {
   const file = formData.get("file") as File;
 
   if (!file) {
-    throw new Error("No file uploaded");
+    return { success: false, error: "No file uploaded" };
   }
 
   try {
@@ -47,8 +40,10 @@ export async function parsePDFStatement(
     const buffer = Buffer.from(arrayBuffer);
 
     // Extract text from PDF
-    // @ts-ignore
-    const data = await pdf(buffer);
+    const parser = new PDFParse({ data: buffer });
+    const data = await parser.getText();
+    await parser.destroy();
+
     const textContent = data.text;
 
     // Use AI to structure the text into transactions
@@ -106,20 +101,28 @@ export async function parsePDFStatement(
     const rawTransactions = parsed.transactions || [];
 
     // Map to UploadedTransaction format
-    return rawTransactions.map((t: any) => ({
-      id: crypto.randomUUID(),
-      date: t.date,
-      description: t.description,
-      amount: Number(t.amount),
-      type: t.type,
-      confirmed: false,
-      // We let the NEXT step (the existing AI categorizer) handle categorization and cleaning
-      // to keep this step focused purely on extraction.
-    }));
-  } catch (error) {
-    console.error("PDF Parsing Error:", error);
-    throw new Error(
-      `Failed to parse PDF: ${error instanceof Error ? error.message : String(error)}`,
+    const transactions = rawTransactions.map(
+      (t: {
+        date: string;
+        description: string;
+        amount: number;
+        type: string;
+      }) => ({
+        id: crypto.randomUUID(),
+        date: t.date,
+        description: t.description,
+        amount: Number(t.amount),
+        type: t.type,
+        confirmed: false,
+      }),
     );
+
+    return { success: true, transactions };
+  } catch (error: any) {
+    console.error("PDF Parsing error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }

@@ -6,8 +6,6 @@ import {
   Upload,
   Check,
   AlertCircle,
-  Shield,
-  Loader2,
   ChevronRight,
   Wallet,
   Building2,
@@ -107,7 +105,11 @@ export function StatementUploadModal({
           // Process PDF via Server Action
           const formData = new FormData();
           formData.append("file", file);
-          parsed = await parsePDFStatement(formData);
+          const result = await parsePDFStatement(formData);
+          if (!result.success) {
+            throw new Error(result.error || "Failed to parse PDF");
+          }
+          parsed = result.transactions || [];
         } else {
           // Process CSV locally
           parsed = await parseCSV(file);
