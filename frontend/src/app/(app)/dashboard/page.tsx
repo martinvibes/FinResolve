@@ -201,9 +201,16 @@ function DashboardContent() {
         for (const action of actions) {
           if (action.type === "LOG_EXPENSE") {
             const payload = action.payload as LogExpensePayload;
+            const amountVal = (payload as any).amount;
+            const amount =
+              typeof amountVal === "string"
+                ? parseFloat(amountVal.replace(/,/g, ""))
+                : Number(amountVal);
 
-            if (!payload.amount || payload.amount <= 0) {
-              console.warn("AI attempted to log expense with 0 amount");
+            if (!amount || amount <= 0) {
+              console.warn(
+                "AI attempted to log expense with 0 or invalid amount",
+              );
               continue;
             }
 
@@ -211,7 +218,7 @@ function DashboardContent() {
             addSpending({
               id: crypto.randomUUID(),
               category: payload.category,
-              amount: payload.amount,
+              amount: amount,
               confidence: "high",
               source: "ai",
               description: payload.description,
@@ -222,16 +229,23 @@ function DashboardContent() {
             });
           } else if (action.type === "LOG_INCOME") {
             const payload = action.payload as LogIncomePayload;
+            const amountVal = (payload as any).amount;
+            const amount =
+              typeof amountVal === "string"
+                ? parseFloat(amountVal.replace(/,/g, ""))
+                : Number(amountVal);
 
-            if (!payload.amount || payload.amount <= 0) {
-              console.warn("AI attempted to log income with 0 amount");
+            if (!amount || amount <= 0) {
+              console.warn(
+                "AI attempted to log income with 0 or invalid amount",
+              );
               continue;
             }
 
             addSpending({
               id: crypto.randomUUID(),
               category: payload.category, // e.g. 'gift', 'salary'
-              amount: payload.amount,
+              amount: amount,
               confidence: "high",
               source: "ai",
               description: payload.description,
@@ -242,11 +256,16 @@ function DashboardContent() {
             });
           } else if (action.type === "LOG_TRANSFER") {
             const payload = action.payload as LogTransferPayload;
+            const amountVal = (payload as any).amount;
+            const amount =
+              typeof amountVal === "string"
+                ? parseFloat(amountVal.replace(/,/g, ""))
+                : Number(amountVal);
 
             addSpending({
               id: crypto.randomUUID(),
               category: "other", // Default category for transfer
-              amount: payload.amount,
+              amount: amount,
               confidence: "high",
               source: "ai",
               description: payload.description || "Transfer",
@@ -258,6 +277,12 @@ function DashboardContent() {
             });
           } else if (action.type === "UPDATE_GOAL") {
             const payload = action.payload as UpdateGoalPayload;
+            const amountVal = (payload as any).amount;
+            const amount =
+              typeof amountVal === "string"
+                ? parseFloat(amountVal.replace(/,/g, ""))
+                : Number(amountVal);
+
             // 1. Find Goal
             const goal = profile.goals.find(
               (g) =>
@@ -267,7 +292,7 @@ function DashboardContent() {
 
             if (goal) {
               // 2. Update Goal Value
-              const newCurrent = goal.current + payload.amount;
+              const newCurrent = goal.current + amount;
               updateGoal(goal.id, { current: newCurrent });
 
               // 3. Log as an 'Expense' (money moving from account to goal)
@@ -275,7 +300,7 @@ function DashboardContent() {
               addSpending({
                 id: crypto.randomUUID(),
                 category: "savings",
-                amount: payload.amount,
+                amount: amount,
                 confidence: "high",
                 source: "ai",
                 description: `Saved for ${goal.name}`,
@@ -287,10 +312,16 @@ function DashboardContent() {
             }
           } else if (action.type === "CREATE_GOAL") {
             const payload = action.payload as CreateGoalPayload;
+            const targetVal = (payload as any).target;
+            const target =
+              typeof targetVal === "string"
+                ? parseFloat(targetVal.replace(/,/g, ""))
+                : Number(targetVal);
+
             addGoal({
               id: crypto.randomUUID(),
               name: payload.name,
-              target: payload.target,
+              target: target,
               current: 0,
               deadline: payload.deadline,
               priority: "medium",

@@ -326,15 +326,20 @@ Guidelines:
   - Match account/goal names to IDs in the list above.
   - If accounts/goals are not found, ask for clarification.
   
+  Guidelines for Actions:
+  - CRITICAL: All amounts in JSON actions MUST be in whole units (e.g. 45.00 for 45 Naira/Dollars), NOT in sub-units like cents or kobo.
+  - DO NOT multiply amounts by 100.
+  - Ensure 'amount' is a number, not a string.
+
   Example Response (Expense):
   "Got it! I've logged that from your ${profile.accounts[0]?.name || "account"}. 🍔"
   [[ACTION]]
   {
     "type": "LOG_EXPENSE",
     "payload": {
-      "amount": 5000,
+      "amount": 45.0,
       "category": "food",
-      "description": "Food",
+      "description": "Lunch",
       "accountId": "${profile.accounts[0]?.id || ""}"
     }
   }
