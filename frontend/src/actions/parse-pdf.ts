@@ -29,25 +29,69 @@ if (typeof DOMMatrix === "undefined") {
 export async function parsePDFStatement(
   formData: FormData,
 ): Promise<PDFParseResult> {
+  // 1. Initial Logging for Deployment Debugging
+  console.log("[parsePDFStatement] Starting PDF parse server action...");
+  console.log(
+    "[parsePDFStatement] OPENAI_API_KEY present:",
+    !!process.env.OPENAI_API_KEY,
+  );
+
   const file = formData.get("file") as File;
 
   if (!file) {
+    console.error("[parsePDFStatement] No file found in FormData");
     return { success: false, error: "No file uploaded" };
+  }
+
+  const fileSizeMB = file.size / (1024 * 1024);
+  console.log(
+    `[parsePDFStatement] File received: ${file.name} (${fileSizeMB.toFixed(2)} MB)`,
+  );
+
+  // Platforms like Vercel have a 4.5MB payload limit for serverless functions
+  if (file.size > 4.5 * 1024 * 1024) {
+    return {
+      success: false,
+      error: `File too large (${fileSizeMB.toFixed(2)}MB). Maximum allowed is 4.5MB for serverless processing.`,
+    };
   }
 
   try {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Extract text from PDF
+    // 2. Robust Library Initialization
+    console.log("[parsePDFStatement] Initializing PDFParse instance...");
+    if (!PDFParse) {
+      throw new Error(
+        "PDFParse library failed to load. This might be a dependency bundling issue in production.",
+      );
+    }
+
     const parser = new PDFParse({ data: buffer });
+
+    console.log("[parsePDFStatement] Extracting text...");
     const data = await parser.getText();
+
+    console.log("[parsePDFStatement] Destroying parser...");
     await parser.destroy();
 
     const textContent = data.text;
+    if (!textContent || textContent.trim().length === 0) {
+      console.warn("[parsePDFStatement] No text extracted from PDF");
+      return {
+        success: false,
+        error:
+          "No text could be extracted from this PDF. It might be an image-only scan, encrypted, or corrupted.",
+      };
+    }
 
-    // Use AI to structure the text into transactions
-    // We'll process the first 15000 tokens of text to avoid context limits.
+    console.log(
+      `[parsePDFStatement] Extracted ${textContent.length} characters of text`,
+    );
+
+    // 3. AI Extraction
+    // We'll process the first 15000 chars of text to avoid context limits.
     const truncatedText = textContent.slice(0, 15000);
 
     const prompt = `
@@ -87,6 +131,7 @@ export async function parsePDFStatement(
     }
     `;
 
+    console.log("[parsePDFStatement] Calling OpenAI...");
     const completion = await openai.chat.completions.create({
       model: OPENAI_MODEL_NAME,
       messages: [{ role: "system", content: prompt }],
@@ -95,7 +140,10 @@ export async function parsePDFStatement(
     });
 
     const responseContent = completion.choices[0].message.content;
-    if (!responseContent) throw new Error("No response from AI parser");
+    if (!responseContent) {
+      console.error("[parsePDFStatement] Empty response from OpenAI");
+      throw new Error("No response from AI parser");
+    }
 
     const parsed = JSON.parse(responseContent);
     const rawTransactions = parsed.transactions || [];
@@ -117,12 +165,35 @@ export async function parsePDFStatement(
       }),
     );
 
+    console.log(
+      `[parsePDFStatement] Successfully parsed ${transactions.length} transactions`,
+    );
     return { success: true, transactions };
   } catch (error: any) {
-    console.error("PDF Parsing error:", error);
+    // Log the full error to server console for debugging
+    console.error("[parsePDFStatement] CRITICAL ERROR DETAILS:", error);
+
+    // Check for specific common deployment errors to provide better user feedback
+    let errorMessage = error instanceof Error ? error.message : String(error);
+
+    if (errorMessage.includes("canvas")) {
+      errorMessage =
+        "PDF library dependency error (canvas binary missing in production). Try uploading a CSV or a different PDF format.";
+    } else if (
+      errorMessage.includes("401") ||
+      errorMessage.includes("API key")
+    ) {
+      errorMessage =
+        "Server configuration error: OpenAI API key is missing or invalid in production.";
+    } else if (errorMessage.includes("timeout")) {
+      errorMessage = "Extraction took too long. Try a smaller PDF file.";
+    }
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : String(error),
+      error: errorMessage.startsWith("PDF Parsing error")
+        ? errorMessage
+        : `PDF Parsing error: ${errorMessage}`,
     };
   }
 }

@@ -355,14 +355,17 @@ export async function generateAIResponse(
   profile: UserFinancialProfile,
   history: { role: string; content: string }[] = [],
 ) {
-  terminalLog(`Processing query: "${query}"`);
   const startTime = Date.now();
+  console.log(`[AI] Processing query: "${query}"`);
+  console.log(
+    `[AI] Environment check: OPENAI_API_KEY=${!!process.env.OPENAI_API_KEY}, OPIK_API_KEY=${!!process.env.OPIK_API_KEY}`,
+  );
 
   try {
-    // Build the system prompt
+    // 1. Build the system prompt
     const systemPrompt = buildSystemPrompt(profile);
 
-    // Filter history and map to OpenAI format
+    // 2. Prepare messages
     const recentHistory = history.slice(-10).map((msg) => ({
       role: (msg.role === "assistant" ? "assistant" : "user") as
         | "assistant"
@@ -379,7 +382,8 @@ export async function generateAIResponse(
       { role: "user", content: query },
     ];
 
-    // Call OpenAI API
+    // 3. Call OpenAI API
+    console.log(`[AI] Calling OpenAI with model: ${OPENAI_MODEL_NAME}...`);
     const completion = await openai.chat.completions.create({
       model: OPENAI_MODEL_NAME,
       messages: messages,
@@ -396,54 +400,52 @@ export async function generateAIResponse(
       totalTokens: completion.usage?.total_tokens || 0,
     };
 
-    // Opik Tracing
-    const trace = opikClient.trace({
-      name: "financial-advice",
-      input: {
-        query,
-        profile: {
-          name: profile.name,
-          income: profile.income?.amount,
-          totalSpending: profile.spendingSummary.reduce(
-            (sum, s) => sum + s.total,
-            0,
-          ),
-          goalsCount: profile.goals.length,
-        },
-      },
-      output: {
-        response: responseText,
-        latencyMs: latency,
-        tokenUsage,
-      },
-      tags: ["openai", "financial-coach"],
-    });
-
-    const span = trace.span({
-      name: "openai-generation",
-      type: "llm",
-      input: {
-        messages,
-      },
-      output: {
-        response: responseText,
-      },
-      metadata: {
-        model: OPENAI_MODEL_NAME,
-        provider: "openai",
-        latencyMs: latency,
-        ...tokenUsage,
-      },
-    });
-    span.end();
-    trace.end();
-
-    // Flush Opik buffer (optional, best effort)
+    // Opik Tracing (wrapped to prevent blocking the response)
     try {
+      const trace = opikClient.trace({
+        name: "financial-advice",
+        input: {
+          query,
+          profile: {
+            name: profile.name,
+            income: profile.income?.amount,
+            totalSpending: profile.spendingSummary.reduce(
+              (sum, s) => sum + s.total,
+              0,
+            ),
+            goalsCount: profile.goals.length,
+          },
+        },
+        output: {
+          response: responseText,
+          latencyMs: latency,
+          tokenUsage,
+        },
+        tags: ["openai", "financial-coach"],
+      });
+
+      const span = trace.span({
+        name: "openai-generation",
+        type: "llm",
+        input: {
+          messages,
+        },
+        output: {
+          response: responseText,
+        },
+        metadata: {
+          model: OPENAI_MODEL_NAME,
+          provider: "openai",
+          latencyMs: latency,
+          ...tokenUsage,
+        },
+      });
+      span.end();
+      trace.end();
       await opikClient.flush();
-      terminalLog("Opik flush completed successfully");
-    } catch (flushError) {
-      console.error("Opik flush error:", flushError);
+      console.log("[AI] Opik tracing completed");
+    } catch (opikError) {
+      console.warn("[AI] Opik tracing failed (ignoring):", opikError);
     }
 
     terminalLog(
@@ -477,14 +479,30 @@ export async function generateAIResponse(
       assumptions: undefined,
       actions: parsedActions, // Helper to return array
     };
-  } catch (error) {
+  } catch (error: any) {
     const latency = Date.now() - startTime;
-    console.error("AI Generation Error:", error);
-    terminalLog("Error generating response", { error, latency });
+    console.error("[AI] CRITICAL ERROR:", error);
+
+    let errorMessage =
+      "I'm having trouble thinking right now. Please try again!";
+
+    if (error?.status === 401) {
+      errorMessage =
+        "Configuration error: The OpenAI API key is missing or invalid in this environment.";
+    } else if (error?.status === 429) {
+      errorMessage =
+        "I'm a bit overwhelmed right now (OpenAI rate limit). Please try again in 20 seconds.";
+    } else if (error?.status === 404) {
+      errorMessage = `Model ${OPENAI_MODEL_NAME} not found. Your OpenAI account might not have access to this model yet.`;
+    } else if (error?.message?.includes("timeout") || latency > 9500) {
+      errorMessage =
+        "The analysis took too long (Vercel timeout). Try asking a shorter or more specific question!";
+    } else if (error?.message) {
+      errorMessage = `Error: ${error.message}`;
+    }
 
     return {
-      content:
-        "I'm having trouble connecting to my financial brain right now. Please try again in a moment! (Check your API Key)",
+      content: errorMessage,
       confidence: "low" as const,
       assumptions: undefined,
       actions: [],

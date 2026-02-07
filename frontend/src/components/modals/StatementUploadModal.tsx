@@ -94,9 +94,20 @@ export function StatementUploadModal({
         return;
       }
 
+      if (file.size > 4.5 * 1024 * 1024) {
+        const msg = `File is too large (${(file.size / (1024 * 1024)).toFixed(2)}MB). Max size is 4.5MB for server processing.`;
+        setError(msg);
+        toast.error(msg);
+        setStep("error");
+        return;
+      }
+
       setStep("processing");
       setError(null);
-      toast.info("Reading file...", { duration: 2000 });
+      toast.info(
+        isPDF ? "Sending PDF to server for parsing..." : "Reading CSV file...",
+        { duration: 3000 },
+      );
 
       try {
         let parsed: UploadedTransaction[] = [];
@@ -107,6 +118,12 @@ export function StatementUploadModal({
           formData.append("file", file);
           const result = await parsePDFStatement(formData);
           if (!result.success) {
+            // Check specifically for production masking errors
+            if (result.error?.includes("Server Components render")) {
+              throw new Error(
+                "Server crashed during PDF processing. The file might be too complex or contain unsupported features.",
+              );
+            }
             throw new Error(result.error || "Failed to parse PDF");
           }
           parsed = result.transactions || [];
