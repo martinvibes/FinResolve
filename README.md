@@ -5,11 +5,11 @@
 <h1 align="center">FinResolve</h1>
 
 <p align="center">
-  <strong>Your AI-Powered Financial Health Companion</strong>
+  <strong>The Private Banker in Your Pocket.</strong>
 </p>
 
 <p align="center">
-  <em>Stop guessing. Start knowing. Take control of your money with intelligent, conversational financial coaching.</em>
+  <em>Stop "managing" money. Start understanding it. FinResolve turns cryptic bank statements into a personalized financial roadmap using GPT-4o and advanced LLM observability.</em>
 </p>
 
 <p align="center">
@@ -18,159 +18,58 @@
   <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript" alt="TypeScript"/>
   <img src="https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase" alt="Supabase"/>
   <img src="https://img.shields.io/badge/OpenAI-GPT--4o-412991?logo=openai" alt="OpenAI"/>
-  <img src="https://img.shields.io/badge/TailwindCSS-4.x-06B6D4?logo=tailwindcss" alt="Tailwind"/>
   <img src="https://img.shields.io/badge/Opik-LLM_Tracing-FF6F00?logo=comet-ml" alt="Opik"/>
 </p>
 
 ---
 
-## The Problem
+## ✨ The Vision
 
-**Financial literacy is broken.**
+FinResolve is a **chat-first AI financial partner** that makes managing money feel like talking to a knowledgeable friend. No rigid forms, no cryptic categories—just clear, actionable insights driven by your actual spending data.
 
-Millions of people struggle with money—not because they're irresponsible, but because:
+![FinResolve Dashboard](frontend/public/docs/media/hero_dashboard.png)
 
-- Traditional budgeting apps feel like spreadsheets with a fresh coat of paint
-- Financial advice is locked behind expensive advisors or buried in jargon
-- People don't know what they don't know about their spending patterns
-- Setting goals is easy; actually tracking and achieving them is hard
-- Bank statements are cryptic, and categorizing transactions is tedious
+### 🚀 Key Innovations
 
-**FinResolve exists to change that.**
-
----
-
-## The Solution
-
-FinResolve is a **chat-first AI financial health app** that makes managing money feel like talking to a knowledgeable friend—one who actually understands your finances, never judges, and is available 24/7.
-
-### What Makes FinResolve Different
-
-| Traditional Apps | FinResolve |
-|-----------------|------------|
-| Rigid forms and dropdowns | Natural language: *"I spent 5k on groceries"* |
-| Manual categorization | AI auto-categorizes your transactions |
-| Static dashboards | Dynamic insights that adapt to YOUR patterns |
-| Generic advice | Personalized coaching based on your financial reality |
-| Overwhelming data dumps | Actionable nudges at the right moment |
+- **Natural Language Interaction**: Talk to your money. "Can I afford that vacation?"
+- **Ghost-Writer PDF Parser**: Drop a bank statement and let the AI extract 60+ transactions in seconds.
+- **FinResolve Score™**: A real-time "Health Check" for your wealth.
+- **LLM Observability**: Powered by **Opik** for 99.9% reliable AI responses.
 
 ---
 
-## Features
+## 🛠️ Features
 
-### Core Financial Management
+### 1. Smart Transaction Engine
 
-**Smart Income & Expense Tracking**
-- Log transactions in plain English: *"Paid $150 for electricity"*
-- AI extracts amount, category, and context automatically
-- **Multi-currency support**: USD, EUR, GBP, NGN, INR, KES, ZAR, CAD, AUD
-- Intelligent shorthand parsing ("5k", "2.5m") adapts to your selected currency
-- Confidence levels for estimated vs. exact amounts
+- **Voice-to-Data**: Log transactions in plain English: _"Spent 5k on diesel"_ or _"Paid 150 for electricity"_.
+- **Multi-Currency Mastery**: Automatic parsing for USD, NGN, EUR, and 6 other major currencies.
+- **Intelligent Shorthand**: Understands "5k", "2.5m", and custom shorthand based on your location.
 
-**Multi-Account Management**
-- Track bank accounts, mobile money (OPay, PalmPay), cash, and crypto
-- Real-time balance updates across all accounts
-- Transfer tracking between accounts
+![AI Chat Interaction](frontend/public/docs/media/chat_demo.gif)
 
-**Intelligent Budgeting**
-- Set spending limits by category (monthly, weekly, or yearly)
-- Visual progress bars show budget health at a glance
-- AI warns you before you overspend, not after
+### 2. The PDF Power-Wash
 
-**Recurring Expense Tracking**
-- Never forget a subscription or bill again
-- Automatic reminders for upcoming payments
-- Full visibility into your fixed costs
+- **One-Click Import**: Upload PDF/CSV statements.
+- **Batch Processing**: AI cleans merchant names (e.g., "POS PAYMENT - CHICKEN REPUB" becomes "Chicken Republic").
+- **Smart Categorization**: 23 categories handled with industrial-grade accuracy.
 
----
+![PDF Parsing Magic](frontend/public/docs/media/pdf_parse_demo.gif)
 
-### AI-Powered Intelligence
+### 3. Financial Coaching
 
-**Conversational Financial Coach**
-- Powered by GPT-4o for nuanced, context-aware responses
-- Understands your full financial picture before responding
-- Can execute actions: log expenses, update goals, create budgets—all through chat
+- **Proactive Nudges**: _"You've used 80% of your food budget with 10 days left."_
+- **Smart Goals**: Math-aware goal tracking that understands deadlines and priorities.
+- **Weekly Insights**: Rule-based pattern detection to catch spending spikes before they hurt.
 
-**Natural Language Processing**
-```
-"I spent about 5k on lunch" → Logs $5,000 / ₦5,000 / £5,000 to Food (medium confidence)
-"Exactly $250 for my phone bill" → Logs $250 to Utilities (high confidence)
-"2.5m for the car deposit" → Logs in your currency to Transport (high confidence)
-```
-*Currency formatting automatically adapts to your selected currency during onboarding.*
-
-**Proactive AI Nudges**
-- *"You've used 80% of your food budget with 10 days left"*
-- *"Great progress! You're ahead on your Emergency Fund goal"*
-- *"Your spending today puts you over your daily safe-to-spend"*
-
-**Weekly Insights**
-- Rule-based pattern detection identifies spending spikes
-- Highlights saving opportunities you might have missed
-- Tracks week-over-week trends automatically
-
----
-
-### FinResolve Score™
-
-A **dynamic financial health score** (0-100) that gives you instant clarity on where you stand.
-
-| Score Range | Rating | What It Means |
-|-------------|--------|---------------|
-| 85-100 | Excellent | Financial rockstar—keep it up |
-| 70-84 | Strong | Solid foundation, room for optimization |
-| 55-69 | Stable | Balanced but vulnerable to surprises |
-| 40-54 | Needs Work | Time to tighten the belt |
-| 0-39 | Critical | Urgent attention required |
-
-**Score Breakdown:**
-- **Spending Control (30%)** — Are you staying within budget?
-- **Savings Consistency (25%)** — Are you building wealth consistently?
-- **Goal Progress (25%)** — Are you hitting milestones on time?
-- **Risk Alerts (20%)** — Are there red flags in your finances?
-
-Each score comes with **AI-generated recommendations** to improve your financial health.
-
----
-
-### Goals & Savings
-
-**Smart Goal Tracking**
-- Create savings goals with targets, deadlines, and priority levels
-- Visual progress indicators show how close you are
-- Deadline-aware scoring: ahead of schedule, on track, or behind
-
-**Goal Templates**
-- Emergency Fund (3-6 months of expenses)
-- Home Down Payment
-- New Vehicle
-- Education/Courses
-- Vacation
-- Wedding
-- Business Investment
-- Custom Goals
-
----
-
-### Bank Statement Import
-
-**CSV & PDF Upload Support**
-- Upload bank statements in **CSV or PDF** format
-- Multi-step upload wizard with drag-and-drop support:
-  1. Select the account to import into
-  2. Upload your file (CSV or PDF)
-  3. AI processes and categorizes transactions
-  4. Preview results with duplicate detection before confirming
-- **AI-Powered Categorization Pipeline**: Transactions are processed in batches of 20 through GPT-4o, which cleans merchant names (strips POS/TRF prefixes, location codes), assigns one of 23 spending categories, and rates confidence (high/medium/low)
-- Intelligent column detection for CSV (handles different bank formats)
-- PDF text extraction with AI-powered structure recognition and date inference
-- Bulk import saves hours of manual entry
+![Financial Score Breakdown](frontend/public/docs/media/score_modal.png)
 
 ---
 
 ### Monthly Financial Reports
 
 **Downloadable PDF Reports**
+
 - Generate professional monthly financial reports as downloadable PDFs
 - Select any month/year to generate a report for
 - Report includes:
@@ -186,6 +85,7 @@ Each score comes with **AI-generated recommendations** to improve your financial
 ### Weekly Insights Dashboard
 
 **Dedicated Analytics Page**
+
 - KPI cards: total spent this week, daily average, top spending category
 - Daily spending trend chart (last 7 days)
 - Category breakdown pie chart
@@ -197,6 +97,7 @@ Each score comes with **AI-generated recommendations** to improve your financial
 ### Activity History
 
 **Full Transaction Ledger**
+
 - Complete history of all transactions with pagination
 - Multi-filter system: by type (expense/income/transfer), by category, by search term
 - Sorting options: newest, oldest, highest amount, lowest amount
@@ -233,36 +134,40 @@ No overwhelming forms. No 50-field profiles. Just what we need to start helping 
 ## Tech Stack
 
 ### Frontend
-| Technology | Purpose |
-|------------|---------|
-| **Next.js 16** | React framework with App Router |
-| **React 19** | UI library with latest features |
-| **TypeScript 5** | Type-safe development |
-| **Tailwind CSS 4** | Utility-first styling |
-| **Framer Motion** | Smooth animations |
-| **Recharts** | Beautiful data visualizations |
-| **Lucide Icons** | Modern icon system |
+
+| Technology         | Purpose                         |
+| ------------------ | ------------------------------- |
+| **Next.js 16**     | React framework with App Router |
+| **React 19**       | UI library with latest features |
+| **TypeScript 5**   | Type-safe development           |
+| **Tailwind CSS 4** | Utility-first styling           |
+| **Framer Motion**  | Smooth animations               |
+| **Recharts**       | Beautiful data visualizations   |
+| **Lucide Icons**   | Modern icon system              |
 
 ### Backend & Database
-| Technology | Purpose |
-|------------|---------|
-| **Supabase** | PostgreSQL database + Auth + Real-time |
-| **Row-Level Security** | Database-level access control |
-| **Server Actions** | Next.js server-side functions |
+
+| Technology             | Purpose                                |
+| ---------------------- | -------------------------------------- |
+| **Supabase**           | PostgreSQL database + Auth + Real-time |
+| **Row-Level Security** | Database-level access control          |
+| **Server Actions**     | Next.js server-side functions          |
 
 ### AI & Intelligence
-| Technology | Purpose |
-|------------|---------|
-| **OpenAI GPT-4o** | Primary conversational AI for chat coaching, transaction categorization, and report insights |
-| **Google Gemini** | Secondary LLM used for general question answering during onboarding |
-| **Opik (Comet ML)** | LLM observability platform — traces every AI call across the app (see details below) |
-| **Custom NLP** | Currency shorthand & intent parsing |
+
+| Technology          | Purpose                                                                                      |
+| ------------------- | -------------------------------------------------------------------------------------------- |
+| **OpenAI GPT-4o**   | Primary conversational AI for chat coaching, transaction categorization, and report insights |
+| **Google Gemini**   | Secondary LLM used for general question answering during onboarding                          |
+| **Opik (Comet ML)** | LLM observability platform — traces every AI call across the app (see details below)         |
+| **Custom NLP**      | Currency shorthand & intent parsing                                                          |
 
 ### Document Processing & Reports
-| Technology | Purpose |
-|------------|---------|
-| **jsPDF + autoTable** | Client-side PDF report generation with tables and charts |
-| **pdf-parse** | Extract text from uploaded PDF bank statements |
+
+| Technology            | Purpose                                                 |
+| --------------------- | ------------------------------------------------------- |
+| **jsPDF + autoTable** | Client-side PDF report generation                       |
+| **unpdf**             | **Serverless-optimized** text extraction for statements |
 
 ### Opik — What It Does
 
@@ -270,19 +175,21 @@ No overwhelming forms. No 50-field profiles. Just what we need to start helping 
 
 **What Opik traces in FinResolve:**
 
-| Traced Operation | Trace Name | What Gets Logged |
-|------------------|------------|------------------|
-| **AI Chat Responses** | `financial-advice` | User query, profile summary (name, income, spending total, goals count), full AI response, latency (ms), token usage (prompt/completion/total), model name |
-| **Bank Statement Categorization** | `ai-categorization` | Batch size, sample transaction description, number of transactions processed |
-| **Weekly Insight Generation** | `weekly-insight` | Total spending, income, the generated insight type and message |
+| Traced Operation            | Trace Name          | What Gets Logged                                                 |
+| --------------------------- | ------------------- | ---------------------------------------------------------------- |
+| **AI Chat Responses**       | `financial-advice`  | Full context, response, latency, token usage, and model data.    |
+| **Bank Statement Analysis** | `ai-categorization` | Categorization confidence, batch metrics, and merchant cleaning. |
+| **Weekly Insights**         | `weekly-insight`    | Rule-based triggers and AI-generated pattern commentary.         |
 
 **How it works:**
+
 - Each AI operation creates a **trace** (the top-level unit) with input/output data and tags (e.g., `["openai", "financial-coach"]`)
 - Within a trace, **spans** capture granular steps — for example, the `openai-generation` span inside a chat trace logs the exact messages sent to the API, the response, model, provider, and latency
 - After each operation, the Opik buffer is flushed to send data to the Comet dashboard
 - All traces are organized under the project name `FinResolve1` in the Opik workspace
 
 **Why this matters:**
+
 - **Debugging**: See exactly what the AI received and responded with for any user interaction
 - **Performance**: Track latency per call to identify slow responses
 - **Cost monitoring**: Token usage per request helps forecast and control API spend
@@ -457,22 +364,26 @@ recurring_items    -- Subscriptions & bills
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/yourusername/finresolve.git
    cd finresolve/frontend
    ```
 
 2. **Install dependencies**
+
    ```bash
    pnpm install
    ```
 
 3. **Set up environment variables**
+
    ```bash
    cp .env.example .env
    ```
 
    Fill in your credentials:
+
    ```env
    # Supabase
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
@@ -494,6 +405,7 @@ recurring_items    -- Subscriptions & bills
    - Apply RLS policies from `supabase-auth-policies.sql`
 
 5. **Start the development server**
+
    ```bash
    pnpm dev
    ```
@@ -541,10 +453,12 @@ AI:  You're doing well! Here's your snapshot:
 ### Dashboard Overview
 
 The dashboard provides a 70/30 split layout:
+
 - **Left (70%)**: Financial data, charts, goals, budgets
 - **Right (30%)**: AI chat panel
 
 Key widgets:
+
 - **Financial Pulse**: Income, spending, net worth at a glance
 - **Spending Chart**: Category breakdown visualization
 - **Trend Chart**: Daily/weekly spending patterns
@@ -558,31 +472,31 @@ Key widgets:
 
 FinResolve supports 23 spending categories:
 
-| Category | Emoji | Description |
-|----------|-------|-------------|
-| Food | 🍔 | Groceries, restaurants, delivery |
-| Transport | 🚗 | Fuel, Uber, public transit |
-| Utilities | 💡 | Electricity, water, internet |
-| Housing | 🏠 | Rent, mortgage, repairs |
-| Entertainment | 🎬 | Movies, streaming, events |
-| Shopping | 🛍️ | Clothing, electronics, general |
-| Health | 💊 | Medical, gym, wellness |
-| Education | 📚 | Courses, books, tuition |
-| Savings | 💰 | Transfers to savings |
-| Family | 👨‍👩‍👧 | Family support, gifts to family |
-| Debt | 💳 | Loan payments, credit cards |
-| Personal Care | 💅 | Grooming, self-care |
-| Investment | 📈 | Stocks, crypto, business |
-| Tax | 🏛️ | Tax payments |
-| Salary | 💵 | Income from employment |
-| Business | 💼 | Business expenses |
-| Gift | 🎁 | Gifts to others |
-| Data & Airtime | 📱 | Airtime, data bundles |
-| Travel | ✈️ | Flights, hotels, Airbnb |
-| Insurance | 🛡️ | Life, health, car, property |
-| Subscriptions | 🔄 | Spotify, Netflix, app subscriptions |
-| Charity | 🤝 | Donations, tithing, non-profits |
-| Other | 📦 | Miscellaneous |
+| Category       | Emoji | Description                         |
+| -------------- | ----- | ----------------------------------- |
+| Food           | 🍔    | Groceries, restaurants, delivery    |
+| Transport      | 🚗    | Fuel, Uber, public transit          |
+| Utilities      | 💡    | Electricity, water, internet        |
+| Housing        | 🏠    | Rent, mortgage, repairs             |
+| Entertainment  | 🎬    | Movies, streaming, events           |
+| Shopping       | 🛍️    | Clothing, electronics, general      |
+| Health         | 💊    | Medical, gym, wellness              |
+| Education      | 📚    | Courses, books, tuition             |
+| Savings        | 💰    | Transfers to savings                |
+| Family         | 👨‍👩‍👧    | Family support, gifts to family     |
+| Debt           | 💳    | Loan payments, credit cards         |
+| Personal Care  | 💅    | Grooming, self-care                 |
+| Investment     | 📈    | Stocks, crypto, business            |
+| Tax            | 🏛️    | Tax payments                        |
+| Salary         | 💵    | Income from employment              |
+| Business       | 💼    | Business expenses                   |
+| Gift           | 🎁    | Gifts to others                     |
+| Data & Airtime | 📱    | Airtime, data bundles               |
+| Travel         | ✈️    | Flights, hotels, Airbnb             |
+| Insurance      | 🛡️    | Life, health, car, property         |
+| Subscriptions  | 🔄    | Spotify, Netflix, app subscriptions |
+| Charity        | 🤝    | Donations, tithing, non-profits     |
+| Other          | 📦    | Miscellaneous                       |
 
 ---
 
@@ -591,29 +505,32 @@ FinResolve supports 23 spending categories:
 ### Server Actions
 
 #### `generateAIResponse(query, profile, history)`
+
 Generates an AI chat response with full financial context. Traced via Opik.
 
 ```typescript
 const response = await generateAIResponse(
-  'I spent 5k on food',
+  "I spent 5k on food",
   userProfile,
-  chatHistory
+  chatHistory,
 );
 // Returns: { content: string, confidence: string, actions: AIAction[] }
 // Actions: LOG_EXPENSE, LOG_INCOME, LOG_TRANSFER, UPDATE_GOAL, CREATE_GOAL, CREATE_BUDGET
 ```
 
 #### `categorizeTransactionsAI(transactions)`
+
 Batch-categorizes raw bank transactions using GPT-4o. Traced via Opik.
 
 ```typescript
 const categorized = await categorizeTransactionsAI([
-  { id: '1', description: 'POS PAYMENT - CHICKEN REPUB LAGOS', amount: 5000 }
+  { id: "1", description: "POS PAYMENT - CHICKEN REPUB LAGOS", amount: 5000 },
 ]);
 // Returns: { id, merchantName: 'Chicken Republic', category: 'food', confidence: 'high' }[]
 ```
 
 #### `generateWeeklyInsight(profile)`
+
 Generates rule-based weekly financial insights. Traced via Opik.
 
 ```typescript
@@ -622,19 +539,23 @@ const insight = await generateWeeklyInsight(userProfile);
 ```
 
 #### `generateReportInsight(profile, month)`
+
 Generates AI-powered insights for monthly PDF reports.
 
 #### `parsePDFStatement(file)`
+
 Extracts transactions from a PDF bank statement using AI-powered text recognition.
 
 ### Context Hooks
 
 #### `useAuth()`
+
 ```typescript
 const { user, profile, signIn, signUp, signOut, loading } = useAuth();
 ```
 
 #### `useFinancial()`
+
 ```typescript
 const {
   profile,
@@ -642,7 +563,7 @@ const {
   updateGoal,
   addAccount,
   updateBudget,
-  calculateScore
+  calculateScore,
 } = useFinancial();
 ```
 
@@ -671,6 +592,7 @@ We welcome contributions! Here's how:
 ## Roadmaps
 
 ### Completed
+
 - [x] **Multi-currency support** (USD, EUR, GBP, NGN, INR, KES, ZAR, CAD, AUD)
 - [x] **PDF bank statement parsing** with AI-powered categorization
 - [x] **Monthly PDF report generation** with AI insights
@@ -678,16 +600,19 @@ We welcome contributions! Here's how:
 - [x] **Weekly insights dashboard** with charts and AI coach commentary
 
 ### Near Term
+
 - [ ] Email verification flow
 - [ ] Password reset functionality
 - [ ] Push notifications for budget alerts
 
 ### Medium Term
+
 - [ ] Plaid integration for automatic bank sync
 - [ ] Shared budgets (couples/families)
 - [ ] Receipt scanning with OCR
 
 ### Long Term
+
 - [ ] Investment tracking & portfolio analysis
 - [ ] Tax optimization suggestions
 - [ ] Financial planning simulations
@@ -701,14 +626,12 @@ This project is licensed under the MIT License. See `LICENSE` for details.
 
 ---
 
-## Acknowledgments
+## 🤝 Acknowledgments
 
-- **OpenAI** for GPT-4o powering the conversational AI
-- **Google** for Gemini powering onboarding assistance
-- **Comet ML** for Opik — LLM observability and tracing
-- **Supabase** for the incredible backend infrastructure
-- **Vercel** for hosting and deployment
-- **The open-source community** for the amazing tools that made this possible
+- **OpenAI** — For GPT-4o, the best conversational mind on the planet.
+- **Comet ML** — For Opik, the only way to build production-grade AI safely.
+- **Supabase** — For making the backend "just work."
+- **Next.js & Vercel** — For the speed of development and deployment.
 
 ---
 
