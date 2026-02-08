@@ -62,19 +62,45 @@ FinResolve is a **chat-first AI financial partner** that makes managing money fe
   <img src="frontend/public/docs/media/pdf_parse_demo.gif" width="800" alt="PDF Parsing Magic"/>
 </p>
 
-### 3. Financial Coaching
+### 3. Financial Coaching & Insights
 
+- **FinResolve Score™**: A live 0-100 gauge of your financial health, visible on every page.
 - **Proactive Nudges**: _"You've used 80% of your food budget with 10 days left."_
-- **Smart Goals**: Math-aware goal tracking that understands deadlines and priorities.
 - **Weekly Insights**: Rule-based pattern detection to catch spending spikes before they hurt.
 
 <p align="center">
   <img src="frontend/public/docs/media/score_modal.png" width="400" alt="Financial Score Breakdown"/>
 </p>
 
+### 4. Goals & Wealth Building
+
+- **Interactive Setup**: Create goals for anything—from "Emergency Fund" to "New Laptop".
+- **Intelligent Prioritization**: Set goals as High, Medium, or Low priority. The AI understands which ones to fund first.
+- **Progress Tracking**: Dynamic progress bars and "Time-to-Completion" estimates based on your current savings rate.
+
+<p align="center">
+  <img src="frontend/public/docs/media/goals_demo.png" width="400" alt="Goal Creation Demo"/>
+</p>
+
+### 5. Budgeting & Subscription Control
+
+- **Smart Limits**: Set monthly or weekly limits for any of the 23 spending categories.
+- **Subscription Vault**: Track Netflix, Spotify, and bills in one place. AI automatically flags price hikes or double-billing.
+- **"Safe to Spend"**: Live calculation of your disposable income after accounting for upcoming bills and goals.
+
+### 6. The Multi-Account Hub
+
+- **Universal Tracking**: Managed balances across **Bank Accounts**, **Mobile Money**, **Cash**, and **Crypto**.
+- **Internal Transfers**: Log transfers between your accounts (e.g., _"Moved 20k from Cash to Bank"_) without affecting your net spending.
+
+### 7. Mission-Critical Privacy
+
+- **Privacy-First AI**: Your data is yours. We use advanced LLM observability (**Opik**) to ensure AI quality while maintaining strict data isolation.
+- **No Manual Forms**: Most apps feel like homework. FinResolve feels like a conversation.
+
 ---
 
-### Monthly Financial Reports
+## 📊 Analytics & Reporting
 
 **Downloadable PDF Reports**
 
