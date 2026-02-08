@@ -49,7 +49,7 @@ FinResolve is a **chat-first AI financial partner** that makes managing money fe
 - **Intelligent Shorthand**: Understands "5k", "2.5m", and custom shorthand based on your location.
 
 <p align="center">
-  <video src="frontend/public/docs/media/chat_demo.mp4" width="800" autoplay muted loop></video>
+  <img src="frontend/public/docs/media/chat_demo.gif" width="800" alt="AI Chat Interaction"/>
 </p>
 
 ### 2. The PDF Power-Wash
@@ -59,7 +59,7 @@ FinResolve is a **chat-first AI financial partner** that makes managing money fe
 - **Smart Categorization**: 23 categories handled with industrial-grade accuracy.
 
 <p align="center">
-  <video src="frontend/public/docs/media/pdf_parse_demo.mp4" width="800" autoplay muted loop></video>
+  <img src="frontend/public/docs/media/pdf_parse_demo.gif" width="800" alt="PDF Parsing Magic"/>
 </p>
 
 ### 3. Financial Coaching
