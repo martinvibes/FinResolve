@@ -652,17 +652,3 @@ This project is licensed under the MIT License. See `LICENSE` for details.
 </p>
 
 ---
-
-## 📁 Media Capture Guide (For High-Resolution)
-
-To solve the low resolution of GIFs, we've upgraded the README to support **MP4** videos. GitHub renders these with perfect clarity.
-
-### 📽️ How to record high-res assets:
-
-1.  **Use MP4**: Record your screen using **QuickTime** (Cmd+Shift+5 on Mac) or **OBS**. Save the output as an `.mp4` file.
-2.  **Naming & Location**: Move your new recordings to `frontend/public/docs/media/` and name them exactly:
-    - `chat_demo.mp4`
-    - `pdf_parse_demo.mp4`
-3.  **Automatic Playback**: The README is already configured to autoplay and loop these files once you drop them in!
-
-**Note**: You can keep `hero_dashboard.png` and `score_modal.png` as high-resolution screenshots/PNGs.
