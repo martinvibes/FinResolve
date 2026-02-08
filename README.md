@@ -69,7 +69,7 @@ FinResolve is a **chat-first AI financial partner** that makes managing money fe
 - **Weekly Insights**: Rule-based pattern detection to catch spending spikes before they hurt.
 
 <p align="center">
-  <img src="frontend/public/docs/media/score_modal.png" width="400" alt="Financial Score Breakdown"/>
+  <img src="frontend/public/docs/media/score_modal.png" width="800" alt="Financial Score Breakdown"/>
 </p>
 
 ### 4. Goals & Wealth Building
@@ -79,7 +79,7 @@ FinResolve is a **chat-first AI financial partner** that makes managing money fe
 - **Progress Tracking**: Dynamic progress bars and "Time-to-Completion" estimates based on your current savings rate.
 
 <p align="center">
-  <img src="frontend/public/docs/media/goals_demo.png" width="400" alt="Goal Creation Demo"/>
+  <img src="frontend/public/docs/media/goals_demo.png" width="800" alt="Goal Creation Demo"/>
 </p>
 
 ### 5. Budgeting & Subscription Control
