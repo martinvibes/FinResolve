@@ -27,7 +27,9 @@
 
 FinResolve is a **chat-first AI financial partner** that makes managing money feel like talking to a knowledgeable friend. No rigid forms, no cryptic categories—just clear, actionable insights driven by your actual spending data.
 
-![FinResolve Dashboard](frontend/public/docs/media/hero_dashboard.png)
+<p align="center">
+  <img src="frontend/public/docs/media/hero_dashboard.png" width="900" alt="FinResolve Dashboard"/>
+</p>
 
 ### 🚀 Key Innovations
 
@@ -46,7 +48,9 @@ FinResolve is a **chat-first AI financial partner** that makes managing money fe
 - **Multi-Currency Mastery**: Automatic parsing for USD, NGN, EUR, and 6 other major currencies.
 - **Intelligent Shorthand**: Understands "5k", "2.5m", and custom shorthand based on your location.
 
-![AI Chat Interaction](frontend/public/docs/media/chat_demo.gif)
+<p align="center">
+  <img src="frontend/public/docs/media/chat_demo.gif" width="800" alt="AI Chat Interaction"/>
+</p>
 
 ### 2. The PDF Power-Wash
 
@@ -54,7 +58,9 @@ FinResolve is a **chat-first AI financial partner** that makes managing money fe
 - **Batch Processing**: AI cleans merchant names (e.g., "POS PAYMENT - CHICKEN REPUB" becomes "Chicken Republic").
 - **Smart Categorization**: 23 categories handled with industrial-grade accuracy.
 
-![PDF Parsing Magic](frontend/public/docs/media/pdf_parse_demo.gif)
+<p align="center">
+  <img src="frontend/public/docs/media/pdf_parse_demo.gif" width="800" alt="PDF Parsing Magic"/>
+</p>
 
 ### 3. Financial Coaching
 
@@ -62,7 +68,9 @@ FinResolve is a **chat-first AI financial partner** that makes managing money fe
 - **Smart Goals**: Math-aware goal tracking that understands deadlines and priorities.
 - **Weekly Insights**: Rule-based pattern detection to catch spending spikes before they hurt.
 
-![Financial Score Breakdown](frontend/public/docs/media/score_modal.png)
+<p align="center">
+  <img src="frontend/public/docs/media/score_modal.png" width="400" alt="Financial Score Breakdown"/>
+</p>
 
 ---
 
