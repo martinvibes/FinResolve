@@ -299,7 +299,9 @@ export type AIActionType =
   | "LOG_INCOME"
   | "UPDATE_GOAL"
   | "LOG_TRANSFER"
-  | "CREATE_GOAL";
+  | "CREATE_GOAL"
+  | "CREATE_ACCOUNT"
+  | "CREATE_BUDGET";
 
 export interface AIAction {
   type: AIActionType;
@@ -309,7 +311,8 @@ export interface AIAction {
     | LogTransferPayload
     | UpdateGoalPayload
     | CreateGoalPayload
-    | CreateBudgetPayload;
+    | CreateBudgetPayload
+    | CreateAccountPayload;
 }
 
 export interface CreateBudgetPayload {
@@ -349,6 +352,12 @@ export interface CreateGoalPayload {
   name: string;
   target: number;
   deadline?: string;
+}
+
+export interface CreateAccountPayload {
+  name: string;
+  type: AccountType;
+  balance: number;
 }
 
 // Default empty profile

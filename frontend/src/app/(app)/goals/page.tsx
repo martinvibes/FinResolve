@@ -59,15 +59,7 @@ export default function GoalsPage() {
           </div>
         ) : (
           profile.goals.map((goal) => (
-            <GoalCard
-              key={goal.id}
-              id={goal.id}
-              title={goal.name}
-              target={goal.target}
-              current={goal.current}
-              deadline={goal.deadline}
-              color="bg-blue-500"
-            />
+            <GoalCard key={goal.id} goal={goal} color="bg-blue-500" />
           ))
         )}
       </div>

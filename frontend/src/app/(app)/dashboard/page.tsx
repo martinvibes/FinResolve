@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { StatementUploadModal } from "@/components/modals/StatementUploadModal";
 import { ReportModal } from "@/components/reports/ReportModal";
 import { AddTransactionModal } from "@/components/modals/AddTransactionModal";
+import { AddGoalModal } from "@/components/modals/AddGoalModal";
 import { Button } from "@/components/ui/button";
 import { Plus, Upload } from "lucide-react";
 import { useFinancial } from "@/contexts/FinancialContext";
@@ -22,12 +23,14 @@ import {
   type UpdateGoalPayload,
   type CreateGoalPayload,
   type CreateBudgetPayload,
+  type CreateAccountPayload,
   type SpendingCategory,
 } from "@/lib/types";
 
 // New components
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { CommandBar } from "@/components/dashboard/CommandBar";
+import { CoachInsight } from "@/components/dashboard/CoachInsight";
 import { FinancialPulseCards } from "@/components/dashboard/FinancialPulseCards";
 import { AccountCards } from "@/components/dashboard/AccountCards";
 import { BudgetProgress } from "@/components/dashboard/BudgetProgress";
@@ -40,6 +43,7 @@ import { FinResolveScoreModal } from "@/components/dashboard/FinResolveScoreModa
 import { ChatPanel, type Message } from "@/components/chat/ChatPanel";
 import { ChatDrawer } from "@/components/chat/ChatDrawer";
 import { MobileChatInput } from "@/components/chat/MobileChatInput";
+import { SaveToGoalModal } from "@/components/modals/SaveToGoalModal";
 
 const SUGGESTIONS = [
   "Where is my money going?",
@@ -79,6 +83,7 @@ function DashboardContent() {
     addSpendingSummary,
     addGoal,
     addBudget,
+    addAccount,
   } = useFinancial();
   const { user } = useAuth();
 
@@ -89,6 +94,8 @@ function DashboardContent() {
   const [showScoreModal, setShowScoreModal] = useState(false);
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
+  const [showAddGoalModal, setShowAddGoalModal] = useState(false);
+  const [showSaveToGoalModal, setShowSaveToGoalModal] = useState(false);
   const hasInitialized = useRef(false);
 
   // AI contextual nudge based on financial state
@@ -336,6 +343,16 @@ function DashboardContent() {
               period: "monthly",
               spent: 0,
             });
+          } else if (action.type === "CREATE_ACCOUNT") {
+            const payload = action.payload as CreateAccountPayload;
+            addAccount({
+              id: crypto.randomUUID(),
+              name: payload.name,
+              type: payload.type,
+              balance: payload.balance,
+              currency: profile.currency,
+              isPrimary: profile.accounts.length === 0,
+            });
           }
         }
 
@@ -426,12 +443,39 @@ function DashboardContent() {
 
   const handleSaveNow = () => {
     if (profile.goals.length > 0) {
-      handleSend(
-        `I want to save money towards my ${profile.goals[0].name} goal`,
-      );
+      setShowSaveToGoalModal(true);
     } else {
-      handleSend("Help me set up a savings goal");
+      setShowAddGoalModal(true);
     }
+  };
+
+  const handleCoachAction = (actionLabel: string) => {
+    if (
+      actionLabel.toLowerCase().includes("goal") ||
+      actionLabel.toLowerCase().includes("start")
+    ) {
+      setShowAddGoalModal(true);
+    } else if (actionLabel.toLowerCase().includes("breakdown")) {
+      handleAnalyze();
+    }
+  };
+
+  const handleAddGoal = (data: {
+    title: string;
+    targetAmount: string;
+    deadline: string;
+    color: string;
+  }) => {
+    addGoal({
+      id: crypto.randomUUID(),
+      name: data.title,
+      target: parseFloat(data.targetAmount || "0"),
+      current: 0,
+      deadline: data.deadline || undefined,
+      priority: "medium", // Default for now
+      createdAt: new Date().toISOString(),
+    });
+    setShowAddGoalModal(false);
   };
 
   // Show loading or onboarding redirect
@@ -485,6 +529,10 @@ function DashboardContent() {
                 </Button> */}
               </div>
             </div>
+
+            {/* Coach Insight (Proactive AI Nudges) */}
+            <CoachInsight onAction={handleCoachAction} />
+
             {/* Account Overview */}
             <AccountCards />
 
@@ -562,6 +610,20 @@ function DashboardContent() {
         isOpen={showScoreModal}
         onClose={() => setShowScoreModal(false)}
       />
+
+      <AddGoalModal
+        isOpen={showAddGoalModal}
+        onClose={() => setShowAddGoalModal(false)}
+        onAdd={handleAddGoal}
+      />
+
+      {profile.goals.length > 0 && (
+        <SaveToGoalModal
+          isOpen={showSaveToGoalModal}
+          onClose={() => setShowSaveToGoalModal(false)}
+          goal={profile.goals[0]}
+        />
+      )}
     </div>
   );
 }

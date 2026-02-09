@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   type ReactNode,
 } from "react";
 import {
@@ -81,11 +82,42 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
 
+  // Track which user the state belongs to. Use a ref to check during render.
+  const initializedUserId = useRef<string | null | undefined>(undefined);
+  // Guard to prevent syncing empty state to Supabase before data is loaded
+  const hasLoadedRef = useRef(false);
+
+  // Synchronous check during render to catch user changes before the next paint
+  if (
+    initializedUserId.current !== undefined &&
+    initializedUserId.current !== (user?.id || null)
+  ) {
+    console.log(
+      "Synchronous user mismatch detected! resetting state for",
+      user?.id || "anonymous",
+    );
+    // We set initializedUserId to the new user and reset state immediately
+    initializedUserId.current = user?.id || null;
+    hasLoadedRef.current = false; // Reset loaded flag on user change
+    setProfile(createEmptyProfile());
+    setIsLoading(true);
+  }
+
   // Load profile from Supabase or localStorage
   useEffect(() => {
     async function loadProfile() {
       // Wait for auth to finish loading
       if (authLoading) return;
+
+      console.log(
+        "User transition detected or auth ready, preparing financial state",
+        user?.id || "anonymous",
+      );
+
+      // We do NOT reset to empty profile here anymore,
+      // as that triggers dangerous syncs if not careful.
+      // The render-phase reset already handled user changes.
+      setIsLoading(true);
 
       try {
         // If user is authenticated, load their profile from Supabase
@@ -194,6 +226,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
                 deadline: g.deadline || undefined,
                 priority: g.priority as "high" | "medium" | "low",
                 createdAt: g.created_at,
+                milestones: Array.isArray(g.milestones) ? g.milestones : [],
               })),
               accounts: (accountsRes.data || []).map((a) => ({
                 id: a.id,
@@ -278,6 +311,8 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
           setProfile(JSON.parse(stored));
         }
       } finally {
+        initializedUserId.current = user?.id || null;
+        hasLoadedRef.current = true; // Mark as loaded even on error/fallback
         setIsLoading(false);
       }
     }
@@ -371,7 +406,11 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         );
 
         if (accountsToDelete.length > 0) {
-          await supabase.from("accounts").delete().in("id", accountsToDelete);
+          const { error: delError } = await supabase
+            .from("accounts")
+            .delete()
+            .in("id", accountsToDelete);
+          if (delError) console.error("Error deleting accounts:", delError);
         }
 
         if (newProfile.accounts.length > 0) {
@@ -384,14 +423,22 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
             currency: a.currency,
             is_primary: a.isPrimary,
           }));
-          await supabase.from("accounts").upsert(upserts);
+          const { error: upsertError } = await supabase
+            .from("accounts")
+            .upsert(upserts);
+          if (upsertError)
+            console.error("Error upserting accounts:", upsertError);
         }
 
         // Sync Budgets
-        const { data: existingBudgets } = await supabase
-          .from("budgets")
-          .select("id")
-          .eq("profile_id", profileId);
+        const { data: existingBudgets, error: fetchBudgetsError } =
+          await supabase
+            .from("budgets")
+            .select("id")
+            .eq("profile_id", profileId);
+
+        if (fetchBudgetsError)
+          console.error("Error fetching budgets:", fetchBudgetsError);
 
         const existingBudgetIds = new Set(
           existingBudgets?.map((b) => b.id) || [],
@@ -403,7 +450,11 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         );
 
         if (budgetsToDelete.length > 0) {
-          await supabase.from("budgets").delete().in("id", budgetsToDelete);
+          const { error: delError } = await supabase
+            .from("budgets")
+            .delete()
+            .in("id", budgetsToDelete);
+          if (delError) console.error("Error deleting budgets:", delError);
         }
 
         if (newProfile.budgets.length > 0) {
@@ -414,14 +465,22 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
             limit_amount: b.limit,
             period: b.period,
           }));
-          await supabase.from("budgets").upsert(upserts);
+          const { error: upsertError } = await supabase
+            .from("budgets")
+            .upsert(upserts);
+          if (upsertError)
+            console.error("Error upserting budgets:", upsertError);
         }
 
         // Sync Recurring Items
-        const { data: existingRecurring } = await supabase
-          .from("recurring_items")
-          .select("id")
-          .eq("profile_id", profileId);
+        const { data: existingRecurring, error: fetchRecurringError } =
+          await supabase
+            .from("recurring_items")
+            .select("id")
+            .eq("profile_id", profileId);
+
+        if (fetchRecurringError)
+          console.error("Error fetching recurring items:", fetchRecurringError);
 
         const existingRecurringIds = new Set(
           existingRecurring?.map((r) => r.id) || [],
@@ -435,10 +494,12 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         );
 
         if (recurringToDelete.length > 0) {
-          await supabase
+          const { error: delError } = await supabase
             .from("recurring_items")
             .delete()
             .in("id", recurringToDelete);
+          if (delError)
+            console.error("Error deleting recurring items:", delError);
         }
 
         if (newProfile.recurringItems.length > 0) {
@@ -452,16 +513,23 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
             category: r.category,
             is_active: r.isActive,
           }));
-          await supabase.from("recurring_items").upsert(upserts);
+          const { error: upsertError } = await supabase
+            .from("recurring_items")
+            .upsert(upserts);
+          if (upsertError)
+            console.error("Error upserting recurring items:", upsertError);
         }
 
         // Sync spending summaries
         if (newProfile.spendingSummary.length > 0) {
           // Delete existing summaries and insert new ones
-          await supabase
+          const { error: delError } = await supabase
             .from("spending_summaries")
             .delete()
             .eq("profile_id", profileId);
+
+          if (delError)
+            console.error("Error deleting spending summaries:", delError);
 
           const summariesToInsert = newProfile.spendingSummary.map((s) => ({
             profile_id: profileId,
@@ -471,14 +539,22 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
             transaction_count: s.transactionCount,
           }));
 
-          await supabase.from("spending_summaries").insert(summariesToInsert);
+          const { error: insError } = await supabase
+            .from("spending_summaries")
+            .insert(summariesToInsert);
+
+          if (insError)
+            console.error("Error inserting spending summaries:", insError);
         }
 
         // Sync goals
-        const { data: existingGoals } = await supabase
+        const { data: existingGoals, error: fetchGoalsError } = await supabase
           .from("savings_goals")
           .select("id")
           .eq("profile_id", profileId);
+
+        if (fetchGoalsError)
+          console.error("Error fetching goals:", fetchGoalsError);
 
         const existingGoalIds = new Set(existingGoals?.map((g) => g.id) || []);
         const currentGoalIds = new Set(newProfile.goals.map((g) => g.id));
@@ -488,7 +564,11 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
           (id) => !currentGoalIds.has(id),
         );
         if (goalsToDelete.length > 0) {
-          await supabase.from("savings_goals").delete().in("id", goalsToDelete);
+          const { error: delError } = await supabase
+            .from("savings_goals")
+            .delete()
+            .in("id", goalsToDelete);
+          if (delError) console.error("Error deleting goals:", delError);
         }
 
         // Upsert current goals
@@ -504,7 +584,14 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
             created_at: g.createdAt,
           }));
 
-          await supabase.from("savings_goals").upsert(goalsToUpsert);
+          const { error: goalUpsertError } = await supabase
+            .from("savings_goals")
+            .upsert(goalsToUpsert);
+
+          if (goalUpsertError) {
+            console.error("Error upserting goals:", goalUpsertError);
+            toast.error("Failed to sync some goals. Please try again.");
+          }
         }
 
         // Sync Spending Entries
@@ -550,7 +637,8 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
 
   // Debounced save effect
   useEffect(() => {
-    if (!isLoading) {
+    // Only save if we've successfully loaded something and aren't still loading
+    if (!isLoading && hasLoadedRef.current) {
       const timer = setTimeout(() => {
         saveToSupabase(profile);
       }, 1000); // Debounce saves by 1 second
@@ -609,6 +697,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
       ...p,
       accounts: p.accounts.filter((a) => a.id !== id),
     }));
+    toast.error("Account removed");
   }, []);
 
   const addBudget = useCallback((budget: Budget) => {
@@ -944,20 +1033,23 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Add goal
-  const addGoal = useCallback((goal: SavingsGoal) => {
-    // Ensure deadline is a full date string for Supabase (YYYY-MM-DD)
-    const formattedGoal = { ...goal };
-    if (formattedGoal.deadline && formattedGoal.deadline.length === 7) {
-      formattedGoal.deadline = `${formattedGoal.deadline}-01`;
-    }
+  const addGoal = useCallback(
+    (goal: SavingsGoal) => {
+      // Ensure deadline is a full date string for Supabase (YYYY-MM-DD)
+      const formattedGoal = { ...goal };
+      if (formattedGoal.deadline && formattedGoal.deadline.length === 7) {
+        formattedGoal.deadline = `${formattedGoal.deadline}-01`;
+      }
 
-    setProfile((prev) => ({
-      ...prev,
-      goals: [...prev.goals, formattedGoal],
-      lastUpdated: new Date().toISOString(),
-    }));
-    toast.success(`New goal: ${goal.name} 🎯`);
-  }, []);
+      setProfile((prev) => ({
+        ...prev,
+        goals: [...prev.goals, formattedGoal],
+        lastUpdated: new Date().toISOString(),
+      }));
+      toast.success(`New goal: ${goal.name} 🎯`);
+    },
+    [profile.currency],
+  );
 
   // Update goal
   const updateGoal = useCallback(
@@ -968,13 +1060,22 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
         formattedUpdates.deadline = `${formattedUpdates.deadline}-01`;
       }
 
-      setProfile((prev) => ({
-        ...prev,
-        goals: prev.goals.map((g) =>
-          g.id === id ? { ...g, ...formattedUpdates } : g,
-        ),
-        lastUpdated: new Date().toISOString(),
-      }));
+      setProfile((prev) => {
+        const newGoals = prev.goals.map((g) => {
+          if (g.id !== id) return g;
+
+          const updatedGoal = { ...g, ...formattedUpdates };
+
+          return updatedGoal;
+        });
+
+        return {
+          ...prev,
+          goals: newGoals,
+          lastUpdated: new Date().toISOString(),
+        };
+      });
+
       if (updates.current) {
         toast.success("Progress saved! Every bit counts. 📈");
       }

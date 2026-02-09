@@ -18,7 +18,7 @@ interface AddGoalModalProps {
 }
 
 export function AddGoalModal({ isOpen, onClose, onAdd }: AddGoalModalProps) {
-  const [data, setData] = useState({
+  const [data, setData] = useState<GoalFormData>({
     title: "",
     targetAmount: "",
     deadline: "",
@@ -40,50 +40,54 @@ export function AddGoalModal({ isOpen, onClose, onAdd }: AddGoalModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Create Financial Goal">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Goal Title
-          </label>
-          <input
-            type="text"
-            required
-            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-            placeholder="e.g. New Car"
-            value={data.title}
-            onChange={(e) => setData({ ...data, title: e.target.value })}
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Goal Title
+            </label>
+            <input
+              type="text"
+              required
+              className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+              placeholder="e.g. New Car"
+              value={data.title}
+              onChange={(e) => setData({ ...data, title: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Target Amount ($)
+            </label>
+            <input
+              type="number"
+              required
+              className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+              placeholder="e.g. 5000"
+              value={data.targetAmount}
+              onChange={(e) =>
+                setData({ ...data, targetAmount: e.target.value })
+              }
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Deadline{" "}
+              <span className="text-gray-400 font-normal">(Optional)</span>
+            </label>
+            <input
+              type="month"
+              className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+              value={data.deadline}
+              onChange={(e) => setData({ ...data, deadline: e.target.value })}
+            />
+          </div>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Target Amount ($)
-          </label>
-          <input
-            type="number"
-            required
-            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-            placeholder="e.g. 5000000"
-            value={data.targetAmount}
-            onChange={(e) => setData({ ...data, targetAmount: e.target.value })}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Deadline{" "}
-            <span className="text-gray-400 font-normal">(Optional)</span>
-          </label>
-          <input
-            type="month"
-            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-            value={data.deadline}
-            onChange={(e) => setData({ ...data, deadline: e.target.value })}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Color Code
+            Goal Color
           </label>
           <div className="flex gap-2">
             {[

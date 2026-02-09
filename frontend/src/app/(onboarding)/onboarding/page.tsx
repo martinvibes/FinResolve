@@ -15,7 +15,7 @@ import { StepGoals } from "@/components/onboarding/StepGoals";
 
 import { SpendingCategory, CurrencyCode } from "@/lib/types";
 
-type Step = "welcome" | "income" | "expenses" | "goals";
+type Step = "welcome" | "income" | "expenses";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -51,9 +51,6 @@ export default function OnboardingPage() {
       case "expenses":
         setCurrentStep("income");
         break;
-      case "goals":
-        setCurrentStep("expenses");
-        break;
     }
   };
 
@@ -73,14 +70,16 @@ export default function OnboardingPage() {
     setCurrentStep("expenses");
   };
 
-  const handleExpensesComplete = (
+  const handleExpensesComplete = async (
     categories: { category: SpendingCategory; amount: number }[],
   ) => {
     // Clear existing (if any retry) and add new
     categories.forEach((c) => {
       addSpendingSummary(c.category, c.amount, "medium");
     });
-    setCurrentStep("goals");
+
+    await completeOnboarding();
+    router.push("/dashboard");
   };
 
   const handleGoalsComplete = async (goals: string[]) => {
@@ -109,7 +108,7 @@ export default function OnboardingPage() {
             title="Welcome to FinResolve"
             subtitle="I'm your AI financial coach. Let's get to know you better so I can help you build wealth."
             currentStep={1}
-            totalSteps={4}
+            totalSteps={3}
             showBack={false}
           >
             <StepWelcome
@@ -125,7 +124,7 @@ export default function OnboardingPage() {
             title="Let's start with a baseline"
             subtitle="What is your approximate monthly net income?"
             currentStep={2}
-            totalSteps={4}
+            totalSteps={3}
             onBack={handleBack}
           >
             <StepIncome
@@ -142,23 +141,10 @@ export default function OnboardingPage() {
             title="Where does your money go?"
             subtitle="Select the top categories you spend the most on each month."
             currentStep={3}
-            totalSteps={4}
+            totalSteps={3}
             onBack={handleBack}
           >
             <StepExpenses onComplete={handleExpensesComplete} />
-          </WizardLayout>
-        );
-
-      case "goals":
-        return (
-          <WizardLayout
-            title="What's your main focus?"
-            subtitle="Select up to 5 goals that matter most to you right now."
-            currentStep={4}
-            totalSteps={4}
-            onBack={handleBack}
-          >
-            <StepGoals onComplete={handleGoalsComplete} />
           </WizardLayout>
         );
     }

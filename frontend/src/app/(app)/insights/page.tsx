@@ -2,10 +2,8 @@
 import { useEffect, useState } from "react";
 import { useFinancial } from "@/contexts/FinancialContext";
 import { WeeklyInsight } from "@/components/coach/WeeklyInsight";
-import {
-  getWeeklyInsightAction,
-  type DashboardAnalytics,
-} from "@/actions/insights";
+import { getInsightAction, type DashboardAnalytics } from "@/actions/insights";
+import { type InsightTimeframe } from "@/lib/coach/generateInsight";
 import { Loader2, TrendingUp, Wallet, PieChart, Plus } from "lucide-react";
 import {
   DailyTrendChart,
@@ -22,6 +20,7 @@ export default function InsightsPage() {
   const [data, setData] = useState<DashboardAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [timeframe, setTimeframe] = useState<InsightTimeframe>("weekly");
 
   const handleAddTransaction = (data: {
     amount: string;
@@ -47,8 +46,9 @@ export default function InsightsPage() {
   useEffect(() => {
     async function loadData() {
       if (profile && profile.hasCompletedOnboarding) {
+        setLoading(true);
         try {
-          const result = await getWeeklyInsightAction(profile);
+          const result = await getInsightAction(profile, timeframe);
           setData(result);
         } catch (error) {
           console.error("Failed to load insight", error);
@@ -61,13 +61,15 @@ export default function InsightsPage() {
     if (!isLoading) {
       loadData();
     }
-  }, [profile, isLoading]);
+  }, [profile, isLoading, timeframe]);
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
-        <p className="text-slate-500 font-medium">Analyzing your week...</p>
+        <p className="text-slate-500 font-medium">
+          Analyzing your {timeframe}...
+        </p>
       </div>
     );
   }
@@ -80,20 +82,67 @@ export default function InsightsPage() {
     );
   }
 
-  const dailyAverage = data.totalSpent / 7;
+  const dailyAverage =
+    timeframe === "weekly"
+      ? data.totalSpent / 7
+      : timeframe === "monthly"
+        ? data.totalSpent / new Date().getDate()
+        : data.totalSpent / (new Date().getMonth() + 1);
+
+  const timeframeLabels: Record<InsightTimeframe, string> = {
+    weekly: "Weekly Insights",
+    monthly: "Monthly Insights",
+    yearly: "Yearly Insights",
+  };
+
+  const timeframeSubtitles: Record<InsightTimeframe, string> = {
+    weekly: "Your financial health check for the last 7 days.",
+    monthly: "Deep dive into your spending for the current month.",
+    yearly: "High-level overview of your wealth journey this year.",
+  };
+
+  const trendSubtitles: Record<InsightTimeframe, string> = {
+    weekly: "Your daily spending over the last week",
+    monthly: "Spending progression through the month",
+    yearly: "Your monthly spending trend this year",
+  };
+
+  const periodLabels: Record<InsightTimeframe, string> = {
+    weekly: "Last 7 days",
+    monthly: "Current month",
+    yearly: "Current year",
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 pb-20">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <header>
-          <h1 className="text-3xl font-bold text-slate-900">Weekly Insights</h1>
-          <p className="text-slate-500 mt-1">
-            Your financial health check for the last 7 days.
-          </p>
+          <h1 className="text-3xl font-bold text-slate-900">
+            {timeframeLabels[timeframe]}
+          </h1>
+          <p className="text-slate-500 mt-1">{timeframeSubtitles[timeframe]}</p>
         </header>
+
+        <div className="flex items-center gap-3 bg-white p-1 rounded-2xl border border-slate-100 shadow-sm">
+          {(["weekly", "monthly", "yearly"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTimeframe(t)}
+              className={cn(
+                "px-4 py-2 rounded-xl text-sm font-semibold transition-all capitalize",
+                timeframe === t
+                  ? "bg-slate-900 text-white shadow-md shadow-slate-200 scale-[1.02]"
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50",
+              )}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl font-medium shadow-sm hover:bg-slate-800 transition-colors w-fit"
+          className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl font-medium shadow-sm hover:bg-slate-800 transition-colors w-fit md:hidden"
         >
           <Plus className="w-4 h-4" />
           Add Expense
@@ -105,6 +154,12 @@ export default function InsightsPage() {
         onClose={() => setIsModalOpen(false)}
         onAdd={handleAddTransaction}
       />
+
+      {loading && data ? (
+        <div className="fixed inset-0 bg-white/40 backdrop-blur-[1px] z-50 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+      ) : null}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -120,7 +175,9 @@ export default function InsightsPage() {
             <h3 className="text-3xl font-bold text-slate-900">
               {formatCurrency(data.totalSpent, currency)}
             </h3>
-            <p className="text-xs text-slate-400 mt-2">Last 7 days</p>
+            <p className="text-xs text-slate-400 mt-2">
+              {periodLabels[timeframe]}
+            </p>
           </div>
         </div>
 
@@ -131,12 +188,14 @@ export default function InsightsPage() {
           </div>
           <div className="relative z-10">
             <p className="text-sm font-medium text-slate-500 mb-1">
-              Daily Average
+              {timeframe === "yearly" ? "Monthly Average" : "Daily Average"}
             </p>
             <h3 className="text-3xl font-bold text-slate-900">
               {formatCurrency(dailyAverage, currency)}
             </h3>
-            <p className="text-xs text-slate-400 mt-2">Per day</p>
+            <p className="text-xs text-slate-400 mt-2">
+              {timeframe === "yearly" ? "Per month" : "Per day"}
+            </p>
           </div>
         </div>
 
@@ -173,7 +232,7 @@ export default function InsightsPage() {
           <div className="mb-6">
             <h3 className="text-lg font-bold text-slate-800">Spending Trend</h3>
             <p className="text-sm text-slate-500">
-              Your daily spending over the last week
+              {trendSubtitles[timeframe]}
             </p>
           </div>
           <DailyTrendChart data={data.dailyTrend} currency={currency} />

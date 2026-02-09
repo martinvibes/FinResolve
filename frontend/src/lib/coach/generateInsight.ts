@@ -9,16 +9,20 @@ export interface SpendingInsight {
   confidence: number;
 }
 
-export async function generateWeeklyInsight(
+export type InsightTimeframe = "weekly" | "monthly" | "yearly";
+
+export async function generateInsight(
   profile: UserFinancialProfile,
+  timeframe: InsightTimeframe = "weekly",
 ): Promise<SpendingInsight> {
   const opikClient = getOpikClient();
   const trace = opikClient.trace({
-    name: "weekly-insight",
-    tags: ["coach", "rule-based"],
+    name: `${timeframe}-insight`,
+    tags: ["coach", "rule-based", timeframe],
     input: {
       totalSpending: profile.spendingSummary.reduce((a, b) => a + b.total, 0),
       income: profile.income?.amount,
+      timeframe,
     },
   });
 
@@ -39,20 +43,28 @@ export async function generateWeeklyInsight(
   const foodSpending =
     profile.spendingSummary.find((s) => s.category === "food")?.total || 0;
 
+  const timeframeLabels = {
+    weekly: "this week",
+    monthly: "this month",
+    yearly: "this year",
+  };
+
+  const label = timeframeLabels[timeframe];
+
   try {
     if (income > 0 && totalSpending > income * 0.9) {
       insight = {
         type: "spending_spike",
         message: `You've used ${Math.round(
           (totalSpending / income) * 100,
-        )}% of your monthly income already. Consider cutting back on non-essentials this week to stay safe.`,
+        )}% of your expected income ${label}. Consider cutting back on non-essentials to stay safe.`,
         amount: totalSpending,
         confidence: 0.9,
       };
     } else if (foodSpending > 50000) {
       insight = {
         type: "saving_opportunity",
-        message: `You've spent ₦${foodSpending.toLocaleString()} on food so far. Cooking at home twice more this week could save you ~₦8,000.`,
+        message: `You've spent ${profile.currency !== "USD" ? "₦" : "$"}${foodSpending.toLocaleString()} on food ${label}. Cooking at home more often could help you save significantly.`,
         category: "food",
         amount: foodSpending,
         confidence: 0.85,
@@ -60,8 +72,7 @@ export async function generateWeeklyInsight(
     } else {
       insight = {
         type: "routine_check",
-        message:
-          "Your spending looks healthy this week! You're on track to hit your savings goals if you maintain this pace.",
+        message: `Your spending looks healthy ${label}! You're on track to hit your savings goals if you maintain this pace.`,
         confidence: 0.95,
       };
     }
@@ -78,7 +89,6 @@ export async function generateWeeklyInsight(
     });
     trace.end();
 
-    // getOpikClient() already exists in scope from the start of the function
     await opikClient.flush();
 
     return insight;

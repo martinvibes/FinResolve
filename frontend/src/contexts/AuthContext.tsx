@@ -14,8 +14,15 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  signUp: (email: string, password: string, name: string) => Promise<{ error: string | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    name: string,
+  ) => Promise<{ error: string | null }>;
+  signIn: (
+    email: string,
+    password: string,
+  ) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -39,7 +46,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event, session?.user?.email || "No user");
+      console.log(
+        "Auth state changed:",
+        event,
+        session?.user?.email || "No user",
+      );
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
@@ -75,12 +86,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (!existingProfile) {
           // Create a new profile linked to this user
-          const { error: profileError } = await supabase.from("profiles").insert({
-            user_id: data.user.id,
-            name: name,
-            has_completed_onboarding: false,
-            data_completeness: 0,
-          });
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .insert({
+              user_id: data.user.id,
+              name: name,
+              has_completed_onboarding: false,
+              data_completeness: 0,
+            });
 
           if (profileError) {
             console.error("Error creating profile:", profileError);
@@ -114,9 +127,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    console.log("Signing out user:", user?.id);
     await supabase.auth.signOut();
-    // Don't clear localStorage - we want to preserve the profile for when they log back in
-    // localStorage.removeItem("finresolve-profile");
   };
 
   return (
